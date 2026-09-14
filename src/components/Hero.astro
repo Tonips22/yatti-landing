@@ -1,58 +1,32 @@
 ---
 import BotonTienda from "./BotonTienda.astro";
 
-/**
- * Enlaces de las tiendas.
- *
- * A `null` mientras la app no esté publicada: el botón se pinta desactivado
- * con «Próximamente». Al publicar, basta con poner aquí la URL.
- *
- * Android: https://play.google.com/store/apps/details?id=com.tonips22.yatti
- * iOS:     https://apps.apple.com/es/app/yatti/id<ID que asigne App Store>
- */
 const ENLACE_IOS: string | null = null;
 const ENLACE_ANDROID: string | null = null;
 ---
 
 <section
-	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pt-28 pb-16 text-center"
+	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pt-28 pb-16 text-center gap-4"
 >
-	<div
-		class="-z-10 pointer-events-none absolute inset-0"
-		style="background:radial-gradient(60rem 40rem at 50% -10%, var(--color-primary-soft), transparent 70%)"
-		aria-hidden="true"
-	>
-	</div>
-
-	<img
+	<!-- <img
 		src="/marca/yatti-logo-gradient.png"
 		alt="Yatti!"
 		width="260"
 		height="76"
 		class="mb-8 h-14 w-auto sm:h-20"
-	/>
-
-	<p
-		class="mb-6 inline-block rounded-full px-4 py-1.5 font-medium text-xs sm:text-sm"
-		style="background:var(--color-primary-soft);color:var(--color-primary)"
-	>
-		Sin dinero · Sin apuestas · Solo ligas privadas
-	</p>
+	/> -->
 
 	<h1
-		class="w-full max-w-3xl font-[family-name:var(--font-heading)] text-4xl text-[color:var(--color-foreground)] leading-[1.1] sm:text-6xl"
-		style="font-weight:700"
+		class="w-full max-w-5xl font-heading text-9xl leading-[.9] tracking-tighter font-bold bg-linear-to-br from-primary from-50% to-primary-active bg-clip-text text-transparent"
 	>
-		Predice la vida de tus amigos
+		Predice la vida con tus amigos
 	</h1>
 
 	<p
-		class="mt-6 w-full max-w-xl text-[color:var(--color-secondary)] text-lg leading-relaxed"
+		class=" w-full max-w-xl text-secondary text-lg leading-relaxed"
 	>
 		En tu grupo ya hacéis predicciones todo el rato. Yatti les pone porcentaje,
-		fecha y clasificación. Y no gana quien más acierta: <strong
-			class="text-[color:var(--color-foreground)]">gana quien mejor calibra</strong
-		>.
+		fecha y clasificación.
 	</p>
 
 	<div class="mt-10 flex flex-col gap-3 sm:flex-row">
