@@ -27,8 +27,6 @@ const EJEMPLOS = [
 	{ texto: "¿Dani acabará la carrera en junio?", sujeto: "Dani" },
 ];
 
-const CIERRES = ["10 min", "2 h", "1 día", "1 semana", "1 mes"];
-
 const MODOS = [
 	{
 		id: "confianza",
@@ -59,6 +57,13 @@ const RIVALES = [
 
 const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 ---
+
+<script
+	type="application/json"
+	id="sim-datos"
+	is:inline
+	set:html={JSON.stringify({ rivales: RIVALES, modos: MODOS })}
+></script>
 
 <section id="como-funciona" class="mx-auto max-w-3xl px-5 py-24">
 	<div class="revelar text-center">
@@ -112,7 +117,7 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			id="sim-escenario"
 			class="mt-8 overflow-hidden rounded-3xl border border-glass-border bg-surface"
 		>
-			<div id="sim-pista" class="p-5 sm:p-7">
+			<div id="sim-pista" class="flex min-h-[32rem] flex-col justify-center p-5 sm:min-h-[38rem] sm:p-7">
 				<!-- 1 · Crear ─────────────────────────────────── -->
 				<div class="panel" data-panel="1" role="tabpanel">
 					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
@@ -175,43 +180,6 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						}
 					</div>
 
-					<label
-						data-escalonar
-						for="sim-criterio"
-						class="mt-6 mb-2 block font-semibold text-foreground text-sm"
-					>
-						Criterio de resolución <span class="font-normal text-muted">(opcional)</span>
-					</label>
-					<textarea
-						data-escalonar
-						id="sim-criterio"
-						rows="2"
-						maxlength="500"
-						placeholder="Qué cuenta exactamente como «sí»."
-						class="w-full resize-none rounded-2xl border border-glass-border bg-card px-4 py-3 text-foreground text-sm leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-primary"
-					></textarea>
-					<p data-escalonar class="mt-2 text-muted text-xs leading-relaxed">
-						Rellénalo si la pregunta puede dar lugar a confusiones en su
-						resolución. Cuando existe, es el contrato que zanja las discusiones.
-					</p>
-
-					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
-						Cuándo cierra
-					</p>
-					<div data-escalonar class="flex flex-wrap gap-2">
-						{
-							CIERRES.map((c, i) => (
-								<button
-									type="button"
-									class="cierre rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
-									data-cierre={c}
-									aria-pressed={i === 3 ? "true" : "false"}
-								>
-									{c}
-								</button>
-							))
-						}
-					</div>
 				</div>
 
 				<!-- 2 · Pronosticar ───────────────────────────── -->
@@ -468,10 +436,9 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						>
 						</ol>
 						<p data-escalonar class="mt-3 text-muted text-xs leading-relaxed">
-							La liga ordena por Brier <strong>medio</strong>, no acumulado: quien
-							acaba de entrar no queda enterrado y una mala racha no te hunde de
-							por vida. Además hay una tabla del mes, para que siempre haya
-							carrera nueva.
+							La liga ordena por Brier <strong>medio</strong>, no acumulado: una
+							mala racha no te hunde de por vida. Y hay tabla del mes, para que
+							siempre haya carrera nueva.
 						</p>
 					</div>
 				</div>
@@ -551,21 +518,17 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 	const MUELLE = { type: spring, stiffness: 320, damping: 32, mass: 0.9 };
 	const MUELLE_SUAVE = { type: spring, stiffness: 180, damping: 26 };
 
-	const RIVALES = [
-		{ nombre: "Marta", prob: 85 },
-		{ nombre: "Dani", prob: 40 },
-		{ nombre: "Laura", prob: 60 },
-		{ nombre: "Iván", prob: 50 },
-	];
-
-	const MODOS: Record<string, string> = {
-		confianza:
-			"Quien la creó resuelve directo. Cero fricción, para grupos que se fían entre sí.",
-		justo:
-			"Se propone un resultado y se abre una ventana de gracia. Si nadie disputa, queda firme. Si alguien disputa, escribe su motivo a la vista de todos y el grupo vota: hacen falta dos tercios para tumbarla.",
-		arbitro:
-			"El juez se vota AL CREAR la predicción, cuando nadie sabe todavía por dónde va a salir. Sigue jugando, y su pronóstico queda visible para todos.",
+	const datos = JSON.parse(
+		document.getElementById("sim-datos")!.textContent!,
+	) as {
+		rivales: { nombre: string; prob: number }[];
+		modos: { id: string; nombre: string; texto: string }[];
 	};
+
+	const RIVALES = datos.rivales;
+	const MODOS: Record<string, string> = Object.fromEntries(
+		datos.modos.map((m) => [m.id, m.texto]),
+	);
 
 	/** Mismas fórmulas que `lib/prediccion.ts` en el repo de la app. */
 	const brierDe = (prob: number, ocurrio: boolean) =>
@@ -613,7 +576,6 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		const estado = {
 			paso: 1,
 			sujeto: "Nadie en concreto",
-			cierre: "1 semana",
 			prob: 70,
 			sellado: false,
 			modo: "justo",
@@ -634,42 +596,73 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			});
 		}
 
-		/** Anima la altura del escenario para que el cambio de paso no dé un salto. */
-		async function cambiarPanel(destino: number) {
+		let transicionando = false;
+
+		/**
+		 * Borra los restos de una transición anterior. Sin esto, el panel
+		 * conserva la opacidad y el desenfoque con los que salió, y al volver a
+		 * él (Atrás, o «Volver al principio») aparece velado.
+		 */
+		function limpiar(panel: HTMLElement) {
+			panel.style.opacity = "";
+			panel.style.transform = "";
+			panel.style.filter = "";
+			for (const h of panel.querySelectorAll<HTMLElement>("[data-escalonar]")) {
+				h.style.opacity = "";
+				h.style.transform = "";
+			}
+		}
+
+		async function cambiarPanel(destino: number, preparar?: () => void) {
 			const saliente = paneles.find((p) => !p.hidden)!;
 			const entrante = paneles[destino - 1];
 			if (saliente === entrante) return;
 
+			const hijos = [
+				...entrante.querySelectorAll<HTMLElement>("[data-escalonar]"),
+			];
+
+			/* Se oculta ANTES de quitarle el `hidden`. Al revés, el navegador
+			   alcanza a pintar un fotograma a opacidad plena antes de que arranque
+			   la animación: eso es el parpadeo. */
+			entrante.style.opacity = "0";
+			for (const h of hijos) h.style.opacity = "0";
+
 			const alturaAntes = pista.offsetHeight;
 
-			await animate(
-				saliente,
-				{ opacity: 0, y: -10, filter: "blur(3px)" },
-				{ duration: 0.16 },
-			).finished;
+			await animate(saliente, { opacity: 0, y: -8 }, { duration: 0.14 })
+				.finished;
 			saliente.hidden = true;
-			saliente.style.filter = "";
+			limpiar(saliente);
 			entrante.hidden = false;
 
-			const alturaDespues = pista.offsetHeight;
-			escenario.style.height = alturaAntes + "px";
-			animate(
-				escenario,
-				{ height: [alturaAntes + "px", alturaDespues + "px"] },
-				MUELLE_SUAVE,
-			).finished.then(() => {
-				escenario.style.height = "";
-			});
+			/* El contenido se rellena aquí, antes de medir: si se mide el panel
+			   vacío, la altura calculada es la equivocada y de ahí el salto. */
+			preparar?.();
 
-			animate(entrante, { opacity: [0, 1], y: [18, 0] }, MUELLE);
-			const hijos = entrante.querySelectorAll("[data-escalonar]");
-			if (hijos.length) {
+			const alturaDespues = pista.offsetHeight;
+			if (Math.abs(alturaDespues - alturaAntes) > 4) {
+				escenario.style.height = alturaAntes + "px";
 				animate(
-					hijos,
-					{ opacity: [0, 1], y: [14, 0] },
-					{ ...MUELLE, delay: stagger(0.045, { startDelay: 0.06 }) },
-				);
+					escenario,
+					{ height: [alturaAntes + "px", alturaDespues + "px"] },
+					MUELLE_SUAVE,
+				).finished.then(() => {
+					escenario.style.height = "";
+				});
 			}
+
+			await Promise.all([
+				animate(entrante, { opacity: [0, 1], y: [14, 0] }, MUELLE).finished,
+				hijos.length
+					? animate(
+							hijos,
+							{ opacity: [0, 1], y: [12, 0] },
+							{ ...MUELLE, delay: stagger(0.04, { startDelay: 0.05 }) },
+						).finished
+					: Promise.resolve(),
+			]);
+			limpiar(entrante);
 		}
 
 		function pintarStepper() {
@@ -704,7 +697,8 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 
 		async function irA(n: number) {
 			const destino = Math.min(Math.max(n, 1), paneles.length);
-			if (destino === estado.paso) return;
+			if (transicionando || destino === estado.paso) return;
+			transicionando = true;
 			estado.paso = destino;
 
 			pintarStepper();
@@ -712,14 +706,18 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			siguiente.textContent =
 				destino === paneles.length ? "Volver al principio" : "Siguiente paso";
 
-			await cambiarPanel(destino);
-
-			for (const eco of qa<HTMLElement>("[data-eco-pregunta]")) {
-				eco.textContent = textoPregunta();
+			try {
+				await cambiarPanel(destino, () => {
+					for (const eco of qa<HTMLElement>("[data-eco-pregunta]")) {
+						eco.textContent = textoPregunta();
+					}
+					if (destino === 3) destapar();
+					if (destino === 4) pintarModo();
+					if (destino === 5) pintarMarcador();
+				});
+			} finally {
+				transicionando = false;
 			}
-			if (destino === 3) destapar();
-			if (destino === 4) pintarModo();
-			if (destino === 5) pintarMarcador();
 		}
 
 		/* ── Paso 1 ────────────────────────────────────────────── */
@@ -753,26 +751,6 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 
 		for (const b of qa<HTMLButtonElement>(".sujeto")) {
 			b.addEventListener("click", () => elegirSujeto(b.dataset.sujeto!));
-		}
-
-		for (const b of qa<HTMLButtonElement>(".cierre")) {
-			b.addEventListener("click", () => {
-				estado.cierre = b.dataset.cierre!;
-				for (const otro of qa<HTMLButtonElement>(".cierre")) {
-					const activo = otro === b;
-					otro.setAttribute("aria-pressed", String(activo));
-					otro.style.borderColor = activo
-						? "var(--color-primary)"
-						: "var(--color-glass-border)";
-					otro.style.background = activo
-						? "var(--color-primary-soft)"
-						: "var(--color-card)";
-					otro.style.color = activo
-						? "var(--color-primary)"
-						: "var(--color-secondary)";
-				}
-				animate(b, { scale: [1, 0.93, 1] }, { duration: 0.25 });
-			});
 		}
 
 		/* ── Paso 2 ────────────────────────────────────────────── */
@@ -1000,7 +978,6 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		atras.addEventListener("click", () => irA(estado.paso - 1));
 
 		elegirSujeto("Nadie en concreto");
-		qa<HTMLButtonElement>(".cierre")[3].click();
 		qa<HTMLButtonElement>(".modo")[1].click();
 		qa<HTMLButtonElement>(".resultado")[0].click();
 		pintarProb();
