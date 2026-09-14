@@ -82,6 +82,24 @@
 }
 
 /**
+ * Variante `oscuro:` para usar el tema desde las clases de Tailwind.
+ *
+ * No vale el `dark:` de serie: ese solo mira `prefers-color-scheme` y se
+ * quedaría sordo al botón. Aquí las dos vías, en el mismo orden de prioridad
+ * que los tokens: manda el sistema salvo que `data-tema` diga otra cosa.
+ */
+@custom-variant oscuro {
+  @media (prefers-color-scheme: dark) {
+    &:where(html:not([data-tema='claro']) *) {
+      @slot;
+    }
+  }
+  &:where(html[data-tema='oscuro'] *) {
+    @slot;
+  }
+}
+
+/**
  * El interruptor del tema.
  *
  * Sin `data-tema` manda el sistema. El botón de la cabecera escribe el

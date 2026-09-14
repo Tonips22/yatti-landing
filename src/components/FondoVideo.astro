@@ -1,0 +1,35 @@
+---
+/**
+ * Fondo en vídeo del hero, uno por tema.
+ *
+ * Son dos elementos superpuestos y no uno al que se le cambia el `src`: así el
+ * cambio de tema es un fundido y no un parpadeo con recarga.
+ *
+ * H.264 en mp4 en vez de webm: es el que reproduce todo sin excepciones.
+ */
+---
+
+<div class="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+	<video
+		src="/videos/bg-light.mp4"
+		class="absolute inset-0 h-full w-full object-cover opacity-100 transition-opacity duration-500 oscuro:opacity-0"
+		autoplay
+		muted
+		loop
+		playsinline
+		preload="auto"
+		tabindex="-1"></video>
+
+	<video
+		src="/videos/bg-dark.mp4"
+		class="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 oscuro:opacity-100"
+		autoplay
+		muted
+		loop
+		playsinline
+		preload="auto"
+		tabindex="-1"></video>
+
+	<!-- Velo para que el titular se lea encima del vídeo. -->
+	<span class="absolute inset-0 bg-background opacity-55"></span>
+</div>
