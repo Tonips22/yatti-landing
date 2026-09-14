@@ -1,0 +1,1014 @@
+---
+/**
+ * Simulador jugable del ciclo de una predicción.
+ *
+ * Cada paso es la pantalla real de la app reducida a lo esencial, y el texto
+ * está copiado de ella (`new-prediction.tsx`, `prediction/[id].tsx`,
+ * `resolucion-justa.tsx`) para que lo que se promete aquí sea lo que hay dentro.
+ * Las fórmulas de puntuación son las de `lib/prediccion.ts`.
+ */
+
+const PASOS = [
+	{ n: 1, nombre: "Crear" },
+	{ n: 2, nombre: "Pronosticar" },
+	{ n: 3, nombre: "Destapar" },
+	{ n: 4, nombre: "Resolver" },
+	{ n: 5, nombre: "Puntuar" },
+];
+
+const MIEMBROS = ["Nadie en concreto", "Julia", "Toni", "Marta", "Dani"];
+
+/** Clicar rellena el textarea y ajusta el sujeto: es el atajo de la app. */
+const EJEMPLOS = [
+	{ texto: "¿Conseguirá Toni trabajo antes de octubre?", sujeto: "Toni" },
+	{ texto: "¿Aguantará Julia la dieta hasta fin de mes?", sujeto: "Julia" },
+	{ texto: "¿Se mudará Marta de piso este año?", sujeto: "Marta" },
+	{ texto: "¿Volverán esos dos antes de Navidad?", sujeto: "Nadie en concreto" },
+	{ texto: "¿Dani acabará la carrera en junio?", sujeto: "Dani" },
+];
+
+const CIERRES = ["10 min", "2 h", "1 día", "1 semana", "1 mes"];
+
+const MODOS = [
+	{
+		id: "confianza",
+		nombre: "Confianza",
+		texto:
+			"Quien la creó resuelve directo. Cero fricción, para grupos que se fían entre sí.",
+	},
+	{
+		id: "justo",
+		nombre: "Justo",
+		texto:
+			"Se propone un resultado y se abre una ventana de gracia. Si nadie disputa, queda firme. Si alguien disputa, escribe su motivo a la vista de todos y el grupo vota: hacen falta dos tercios para tumbarla.",
+	},
+	{
+		id: "arbitro",
+		nombre: "Árbitro",
+		texto:
+			"El juez se vota AL CREAR la predicción, cuando nadie sabe todavía por dónde va a salir. Sigue jugando, y su pronóstico queda visible para todos.",
+	},
+];
+
+const RIVALES = [
+	{ nombre: "Marta", prob: 85 },
+	{ nombre: "Dani", prob: 40 },
+	{ nombre: "Laura", prob: 60 },
+	{ nombre: "Iván", prob: 50 },
+];
+
+const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
+---
+
+<section id="como-funciona" class="mx-auto max-w-3xl px-5 py-24">
+	<div class="revelar text-center">
+		<h2
+			class="font-heading text-4xl font-bold tracking-tight text-foreground sm:text-5xl"
+		>
+			Cómo funciona
+		</h2>
+		<p class="mx-auto mt-4 max-w-xl text-secondary leading-relaxed">
+			Una predicción entera, de principio a fin. Escribe la tuya y juega los
+			cinco pasos: las cuentas salen con la misma fórmula que usa la app.
+		</p>
+	</div>
+
+	<div id="sim" class="revelar mt-12">
+		<!-- ── Stepper ─────────────────────────────────────────── -->
+		<div class="relative">
+			<div
+				class="absolute top-4 right-0 left-0 h-0.5 rounded-full bg-hairline"
+				aria-hidden="true"
+			>
+				<div id="sim-progreso" class="h-full w-0 rounded-full bg-primary"></div>
+			</div>
+
+			<ol class="relative flex justify-between" role="tablist" aria-label="Pasos">
+				{
+					PASOS.map((paso) => (
+						<li class="flex flex-col items-center gap-2">
+							<button
+								type="button"
+								role="tab"
+								class="paso group flex flex-col items-center gap-2"
+								data-paso={paso.n}
+								aria-selected={paso.n === 1 ? "true" : "false"}
+							>
+								<span class="bolita flex h-8 w-8 items-center justify-center rounded-full border-2 border-hairline bg-card font-semibold text-muted text-sm tabular-nums">
+									{paso.n}
+								</span>
+								<span class="etiqueta hidden font-medium text-muted text-xs sm:block">
+									{paso.nombre}
+								</span>
+							</button>
+						</li>
+					))
+				}
+			</ol>
+		</div>
+
+		<!-- ── Escenario ───────────────────────────────────────── -->
+		<div
+			id="sim-escenario"
+			class="mt-8 overflow-hidden rounded-3xl border border-glass-border bg-surface"
+		>
+			<div id="sim-pista" class="p-5 sm:p-7">
+				<!-- 1 · Crear ─────────────────────────────────── -->
+				<div class="panel" data-panel="1" role="tabpanel">
+					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
+						Crea la predicción
+					</h3>
+					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
+						Dentro de una liga privada, con tus amigos y nadie más. Escribe la
+						tuya o tira de un ejemplo.
+					</p>
+
+					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
+						¿Sobre quién va?
+					</p>
+					<div data-escalonar class="flex flex-wrap gap-2">
+						{
+							MIEMBROS.map((m, i) => (
+								<button
+									type="button"
+									class="sujeto rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
+									data-sujeto={m}
+									aria-pressed={i === 0 ? "true" : "false"}
+								>
+									{m}
+								</button>
+							))
+						}
+					</div>
+
+					<label
+						data-escalonar
+						for="sim-pregunta"
+						class="mt-6 mb-2 block font-semibold text-foreground text-sm"
+					>
+						La pregunta
+					</label>
+					<textarea
+						data-escalonar
+						id="sim-pregunta"
+						rows="2"
+						maxlength="280"
+						placeholder="¿Conseguirá Manu trabajo antes de octubre?"
+						class="w-full resize-none rounded-2xl border border-glass-border bg-card px-4 py-3 text-foreground leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-primary"
+					></textarea>
+					<p class="mt-1 text-right text-muted text-xs tabular-nums">
+						<span id="sim-cuenta">0</span>/280
+					</p>
+
+					<div data-escalonar class="mt-3 flex flex-wrap gap-2">
+						{
+							EJEMPLOS.map((e) => (
+								<button
+									type="button"
+									class="ejemplo rounded-full border border-dashed border-glass-border px-3 py-1.5 text-left text-muted text-xs transition-colors hover:border-primary hover:text-primary"
+									data-texto={e.texto}
+									data-sujeto={e.sujeto}
+								>
+									{e.texto}
+								</button>
+							))
+						}
+					</div>
+
+					<label
+						data-escalonar
+						for="sim-criterio"
+						class="mt-6 mb-2 block font-semibold text-foreground text-sm"
+					>
+						Criterio de resolución <span class="font-normal text-muted">(opcional)</span>
+					</label>
+					<textarea
+						data-escalonar
+						id="sim-criterio"
+						rows="2"
+						maxlength="500"
+						placeholder="Qué cuenta exactamente como «sí»."
+						class="w-full resize-none rounded-2xl border border-glass-border bg-card px-4 py-3 text-foreground text-sm leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-primary"
+					></textarea>
+					<p data-escalonar class="mt-2 text-muted text-xs leading-relaxed">
+						Rellénalo si la pregunta puede dar lugar a confusiones en su
+						resolución. Cuando existe, es el contrato que zanja las discusiones.
+					</p>
+
+					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
+						Cuándo cierra
+					</p>
+					<div data-escalonar class="flex flex-wrap gap-2">
+						{
+							CIERRES.map((c, i) => (
+								<button
+									type="button"
+									class="cierre rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
+									data-cierre={c}
+									aria-pressed={i === 3 ? "true" : "false"}
+								>
+									{c}
+								</button>
+							))
+						}
+					</div>
+				</div>
+
+				<!-- 2 · Pronosticar ───────────────────────────── -->
+				<div class="panel" data-panel="2" role="tabpanel" hidden>
+					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
+						Pon tu porcentaje
+					</h3>
+					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
+						10 % si lo ves imposible, 90 % si lo tienes clarísimo. Nadie ve el de
+						los demás hasta que cierra el plazo, así que no hay efecto rebaño.
+					</p>
+
+					<div
+						data-escalonar
+						class="mt-6 rounded-2xl border border-glass-border bg-card p-5"
+					>
+						<p class="text-muted text-sm" data-eco-pregunta>{PREGUNTA_POR_DEFECTO}</p>
+
+						<p
+							id="sim-valor"
+							class="mt-4 text-center font-heading text-6xl font-bold tabular-nums sm:text-7xl"
+							aria-hidden="true"
+						>
+							73 %
+						</p>
+
+						<label for="sim-prob" class="sr-only">Tu porcentaje</label>
+						<input
+							id="sim-prob"
+							type="range"
+							min="0"
+							max="100"
+							step="1"
+							value="73"
+							class="mt-2 w-full"
+						/>
+
+						<p
+							id="sim-cobardia"
+							class="mt-3 rounded-xl bg-warning-soft px-3 py-2 text-[13px] text-warning leading-relaxed"
+							hidden
+						>
+							Un 50 % clavado es no mojarse: nunca te hundes, pero nunca ganas.
+							El Brier castiga esa cobardía igual que la chulería.
+						</p>
+
+						<button
+							type="button"
+							id="sim-sellar"
+							class="mt-5 w-full rounded-2xl bg-primary px-6 py-3.5 font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+						>
+							Sellar mi pronóstico
+						</button>
+
+						<div class="mt-5 flex items-center gap-2 border-hairline border-t pt-4">
+							<span class="text-muted text-sm">Los demás:</span>
+							{
+								RIVALES.map(() => (
+									<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft font-semibold text-muted text-xs">
+										?
+									</span>
+								))
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- 3 · Destapar ──────────────────────────────── -->
+				<div class="panel" data-panel="3" role="tabpanel" hidden>
+					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
+						Se cierra el plazo y se destapa todo
+					</h3>
+					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
+						Los cinco pronósticos aparecen a la vez. Es el momento que hace la
+						partida: hasta aquí nadie sabía nada de nadie.
+					</p>
+
+					<p class="mt-5 text-muted text-sm" data-eco-pregunta>{PREGUNTA_POR_DEFECTO}</p>
+
+					<ul id="sim-destape" class="mt-4 grid gap-2"></ul>
+
+					<div
+						class="mt-4 flex items-center justify-between rounded-2xl border border-glass-border bg-card px-4 py-3"
+					>
+						<span class="text-secondary text-sm">Media del grupo</span>
+						<span id="sim-media" class="font-heading font-bold text-lg tabular-nums"
+							>0 %</span
+						>
+					</div>
+
+					<button
+						type="button"
+						id="sim-repetir"
+						class="mt-4 text-muted text-sm underline transition-colors hover:text-primary"
+					>
+						Volver a destapar
+					</button>
+				</div>
+
+				<!-- 4 · Resolver ──────────────────────────────── -->
+				<div class="panel" data-panel="4" role="tabpanel" hidden>
+					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
+						Llega la fecha y se resuelve
+					</h3>
+					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
+						Quién decide el resultado lo elige quien crea la liga, entre tres
+						modos.
+					</p>
+
+					<div data-escalonar class="mt-5 flex flex-wrap gap-2">
+						{
+							MODOS.map((m) => (
+								<button
+									type="button"
+									class="modo rounded-full border border-glass-border bg-card px-4 py-2 font-medium text-secondary text-sm transition-colors"
+									data-modo={m.id}
+									aria-pressed={m.id === "justo" ? "true" : "false"}
+								>
+									Modo {m.nombre}
+								</button>
+							))
+						}
+					</div>
+
+					<p
+						id="sim-modo-texto"
+						data-escalonar
+						class="mt-4 rounded-2xl border border-glass-border bg-card p-4 text-[15px] text-secondary leading-relaxed"
+					>
+					</p>
+
+					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
+						¿Qué pasó?
+					</p>
+					<div data-escalonar class="grid gap-2 sm:grid-cols-3">
+						<button
+							type="button"
+							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
+							data-resultado="si"
+							aria-pressed="true">Sí ocurrió</button
+						>
+						<button
+							type="button"
+							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
+							data-resultado="no"
+							aria-pressed="false">No ocurrió</button
+						>
+						<button
+							type="button"
+							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
+							data-resultado="anulada"
+							aria-pressed="false">Anular</button
+						>
+					</div>
+
+					<!-- Rama del Modo Justo -->
+					<div id="sim-justo" class="mt-5">
+						<div class="rounded-2xl border border-glass-border bg-card p-4">
+							<div class="flex items-baseline justify-between">
+								<span class="font-semibold text-foreground text-sm">
+									Ventana de gracia · 24 h
+								</span>
+								<span class="text-muted text-xs">Si nadie disputa, queda firme</span>
+							</div>
+							<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-hairline">
+								<div id="sim-gracia" class="h-full w-0 rounded-full bg-success"></div>
+							</div>
+
+							<button
+								type="button"
+								id="sim-disputar"
+								class="mt-4 rounded-xl border border-danger px-4 py-2 font-medium text-danger text-sm transition-colors hover:bg-danger-soft"
+							>
+								Disputar el resultado
+							</button>
+
+							<div id="sim-disputa" hidden class="mt-4">
+								<label for="sim-motivo" class="mb-2 block font-semibold text-foreground text-sm">
+									Tu motivo, a la vista de todos
+								</label>
+								<textarea
+									id="sim-motivo"
+									rows="2"
+									maxlength="240"
+									placeholder="Un freelance de tres semanas no es «conseguir trabajo»."
+									class="w-full resize-none rounded-xl border border-glass-border bg-surface px-3 py-2 text-foreground text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
+								></textarea>
+
+								<p class="mt-4 mb-2 font-semibold text-foreground text-sm">
+									Votación del grupo
+								</p>
+								<ul id="sim-votos" class="grid gap-3"></ul>
+								<p id="sim-umbral" class="mt-3 text-muted text-xs leading-relaxed"></p>
+							</div>
+						</div>
+					</div>
+
+					<p class="mt-4 text-muted text-sm leading-relaxed">
+						¿La pregunta estaba mal hecha y no hay forma de resolverla? Se anula,
+						y entonces no afecta a la puntuación de nadie.
+					</p>
+				</div>
+
+				<!-- 5 · Puntuar ───────────────────────────────── -->
+				<div class="panel" data-panel="5" role="tabpanel" hidden>
+					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
+						La clasificación se mueve
+					</h3>
+					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
+						Yatti puntúa con el <strong class="text-foreground">Brier score</strong>,
+						la regla que usan los forecasters serios. Premia acertar <em>y</em> ser
+						sincero con tu confianza.
+					</p>
+
+					<div
+						id="sim-anulada"
+						hidden
+						data-escalonar
+						class="mt-6 rounded-2xl border border-glass-border bg-card p-5 text-center"
+					>
+						<p class="font-heading text-2xl font-bold text-muted">Anulada</p>
+						<p class="mt-2 text-secondary text-sm leading-relaxed">
+							No puntúa a nadie y la clasificación se queda como estaba. Es la
+							válvula de escape para las preguntas que no se pueden resolver.
+						</p>
+					</div>
+
+					<div id="sim-marcador">
+						<div
+							data-escalonar
+							class="mt-6 rounded-2xl border border-glass-border bg-card p-5"
+							aria-live="polite"
+						>
+							<p class="text-muted text-sm">
+								Dijiste <span id="sim-resumen-prob" class="font-semibold">70 %</span> y <span
+									id="sim-resumen-res"
+									class="font-semibold">sí ocurrió</span
+								>
+							</p>
+							<p class="mt-3 flex items-baseline gap-2">
+								<span
+									id="sim-indice"
+									class="font-heading text-5xl font-bold tabular-nums">91</span
+								>
+								<span class="text-muted text-sm">índice de acierto (0-100)</span>
+							</p>
+							<p class="mt-2 text-muted text-[13px]">
+								Brier = <span id="sim-brier" class="tabular-nums">0.090</span> · índice
+								= (1 − Brier) × 100
+							</p>
+						</div>
+
+						<p data-escalonar class="mt-8 mb-3 font-semibold text-foreground text-sm">
+							Clasificación de la ronda
+						</p>
+						<ol
+							id="sim-tabla"
+							class="overflow-hidden rounded-2xl border border-glass-border bg-card"
+						>
+						</ol>
+						<p data-escalonar class="mt-3 text-muted text-xs leading-relaxed">
+							La liga ordena por Brier <strong>medio</strong>, no acumulado: quien
+							acaba de entrar no queda enterrado y una mala racha no te hunde de
+							por vida. Además hay una tabla del mes, para que siempre haya
+							carrera nueva.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- ── Navegación ──────────────────────────────────────── -->
+		<div class="mt-5 flex gap-3">
+			<button
+				type="button"
+				id="sim-atras"
+				class="rounded-2xl border border-glass-border bg-card px-5 py-3 font-semibold text-secondary transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+				disabled>Atrás</button
+			>
+			<button
+				type="button"
+				id="sim-siguiente"
+				class="flex-1 rounded-2xl bg-primary px-6 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+				>Siguiente paso</button
+			>
+		</div>
+	</div>
+</section>
+
+<style>
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* El pulgar del deslizador es EL gesto de la app; el nativo sale en el azul
+	   del sistema y rompe la marca. Es lo único que Tailwind no alcanza. */
+	#sim-prob {
+		appearance: none;
+		-webkit-appearance: none;
+		height: 2.5rem;
+		background: transparent;
+		cursor: pointer;
+	}
+	#sim-prob::-webkit-slider-runnable-track {
+		height: 0.5rem;
+		border-radius: 999px;
+		background: var(--color-primary-soft);
+	}
+	#sim-prob::-webkit-slider-thumb {
+		appearance: none;
+		-webkit-appearance: none;
+		margin-top: -0.5rem;
+		height: 1.5rem;
+		width: 1.5rem;
+		border-radius: 999px;
+		border: 3px solid var(--color-card);
+		background: var(--color-primary);
+		box-shadow: 0 2px 10px var(--color-scrim);
+	}
+	#sim-prob::-moz-range-track {
+		height: 0.5rem;
+		border-radius: 999px;
+		background: var(--color-primary-soft);
+	}
+	#sim-prob::-moz-range-thumb {
+		height: 1.5rem;
+		width: 1.5rem;
+		border-radius: 999px;
+		border: 3px solid var(--color-card);
+		background: var(--color-primary);
+	}
+</style>
+
+<script>
+	import { animate, spring, stagger } from "motion";
+
+	const MUELLE = { type: spring, stiffness: 320, damping: 32, mass: 0.9 };
+	const MUELLE_SUAVE = { type: spring, stiffness: 180, damping: 26 };
+
+	const RIVALES = [
+		{ nombre: "Marta", prob: 85 },
+		{ nombre: "Dani", prob: 40 },
+		{ nombre: "Laura", prob: 60 },
+		{ nombre: "Iván", prob: 50 },
+	];
+
+	const MODOS: Record<string, string> = {
+		confianza:
+			"Quien la creó resuelve directo. Cero fricción, para grupos que se fían entre sí.",
+		justo:
+			"Se propone un resultado y se abre una ventana de gracia. Si nadie disputa, queda firme. Si alguien disputa, escribe su motivo a la vista de todos y el grupo vota: hacen falta dos tercios para tumbarla.",
+		arbitro:
+			"El juez se vota AL CREAR la predicción, cuando nadie sabe todavía por dónde va a salir. Sigue jugando, y su pronóstico queda visible para todos.",
+	};
+
+	/** Mismas fórmulas que `lib/prediccion.ts` en el repo de la app. */
+	const brierDe = (prob: number, ocurrio: boolean) =>
+		((ocurrio ? 1 : 0) - prob / 100) ** 2;
+	const indiceDe = (prob: number, ocurrio: boolean) =>
+		Math.round((1 - brierDe(prob, ocurrio)) * 100);
+
+	/** Misma escala que `colorProbabilidad()` en la app. */
+	function colorProb(v: number) {
+		if (v >= 100) return "var(--color-prob-total)";
+		if (v >= 70) return "var(--color-prob-alta)";
+		if (v >= 50) return "var(--color-prob-media)";
+		if (v >= 30) return "var(--color-prob-baja)";
+		return "var(--color-prob-muy-baja)";
+	}
+
+	const raiz = document.getElementById("sim");
+
+	if (raiz) {
+		const q = <T extends HTMLElement>(sel: string) =>
+			raiz.querySelector(sel) as T;
+		const qa = <T extends HTMLElement>(sel: string) => [
+			...raiz.querySelectorAll<T>(sel),
+		];
+
+		const pasos = qa<HTMLButtonElement>(".paso");
+		const paneles = qa<HTMLElement>(".panel");
+		const pista = q<HTMLElement>("#sim-pista");
+		const escenario = q<HTMLElement>("#sim-escenario");
+		const progreso = q<HTMLElement>("#sim-progreso");
+		const siguiente = q<HTMLButtonElement>("#sim-siguiente");
+		const atras = q<HTMLButtonElement>("#sim-atras");
+
+		const pregunta = q<HTMLTextAreaElement>("#sim-pregunta");
+		const cuenta = q<HTMLElement>("#sim-cuenta");
+		const deslizador = q<HTMLInputElement>("#sim-prob");
+		const valor = q<HTMLElement>("#sim-valor");
+		const cobardia = q<HTMLElement>("#sim-cobardia");
+		const sellar = q<HTMLButtonElement>("#sim-sellar");
+		const destape = q<HTMLElement>("#sim-destape");
+		const media = q<HTMLElement>("#sim-media");
+		const tabla = q<HTMLElement>("#sim-tabla");
+		const votos = q<HTMLElement>("#sim-votos");
+
+		const estado = {
+			paso: 1,
+			sujeto: "Nadie en concreto",
+			cierre: "1 semana",
+			prob: 70,
+			sellado: false,
+			modo: "justo",
+			resultado: "si" as "si" | "no" | "anulada",
+		};
+
+		const textoPregunta = () =>
+			pregunta.value.trim() || pregunta.placeholder;
+
+		/* ── Animaciones base ──────────────────────────────────── */
+
+		function numero(el: HTMLElement, desde: number, hasta: number, sufijo = "") {
+			animate(desde, hasta, {
+				duration: 0.5,
+				onUpdate: (v) => {
+					el.textContent = Math.round(v) + sufijo;
+				},
+			});
+		}
+
+		/** Anima la altura del escenario para que el cambio de paso no dé un salto. */
+		async function cambiarPanel(destino: number) {
+			const saliente = paneles.find((p) => !p.hidden)!;
+			const entrante = paneles[destino - 1];
+			if (saliente === entrante) return;
+
+			const alturaAntes = pista.offsetHeight;
+
+			await animate(
+				saliente,
+				{ opacity: 0, y: -10, filter: "blur(3px)" },
+				{ duration: 0.16 },
+			).finished;
+			saliente.hidden = true;
+			saliente.style.filter = "";
+			entrante.hidden = false;
+
+			const alturaDespues = pista.offsetHeight;
+			escenario.style.height = alturaAntes + "px";
+			animate(
+				escenario,
+				{ height: [alturaAntes + "px", alturaDespues + "px"] },
+				MUELLE_SUAVE,
+			).finished.then(() => {
+				escenario.style.height = "";
+			});
+
+			animate(entrante, { opacity: [0, 1], y: [18, 0] }, MUELLE);
+			const hijos = entrante.querySelectorAll("[data-escalonar]");
+			if (hijos.length) {
+				animate(
+					hijos,
+					{ opacity: [0, 1], y: [14, 0] },
+					{ ...MUELLE, delay: stagger(0.045, { startDelay: 0.06 }) },
+				);
+			}
+		}
+
+		function pintarStepper() {
+			for (const paso of pasos) {
+				const n = Number(paso.dataset.paso);
+				const activo = n === estado.paso;
+				const hecho = n < estado.paso;
+				paso.setAttribute("aria-selected", String(activo));
+				const bolita = paso.querySelector(".bolita") as HTMLElement;
+				const etiqueta = paso.querySelector(".etiqueta") as HTMLElement;
+
+				bolita.style.borderColor =
+					activo || hecho ? "var(--color-primary)" : "var(--color-hairline)";
+				bolita.style.background = hecho
+					? "var(--color-primary)"
+					: "var(--color-card)";
+				bolita.style.color = hecho
+					? "var(--color-on-primary)"
+					: activo
+						? "var(--color-primary)"
+						: "var(--color-muted)";
+				etiqueta.style.color = activo
+					? "var(--color-primary)"
+					: "var(--color-muted)";
+
+				if (activo) animate(bolita, { scale: [1, 1.18, 1] }, { duration: 0.42 });
+			}
+
+			const pct = ((estado.paso - 1) / (pasos.length - 1)) * 100;
+			animate(progreso, { width: pct + "%" }, MUELLE_SUAVE);
+		}
+
+		async function irA(n: number) {
+			const destino = Math.min(Math.max(n, 1), paneles.length);
+			if (destino === estado.paso) return;
+			estado.paso = destino;
+
+			pintarStepper();
+			atras.disabled = destino === 1;
+			siguiente.textContent =
+				destino === paneles.length ? "Volver al principio" : "Siguiente paso";
+
+			await cambiarPanel(destino);
+
+			for (const eco of qa<HTMLElement>("[data-eco-pregunta]")) {
+				eco.textContent = textoPregunta();
+			}
+			if (destino === 3) destapar();
+			if (destino === 4) pintarModo();
+			if (destino === 5) pintarMarcador();
+		}
+
+		/* ── Paso 1 ────────────────────────────────────────────── */
+
+		pregunta.addEventListener("input", () => {
+			cuenta.textContent = String(pregunta.value.length);
+		});
+
+		for (const chip of qa<HTMLButtonElement>(".ejemplo")) {
+			chip.addEventListener("click", () => {
+				pregunta.value = chip.dataset.texto!;
+				cuenta.textContent = String(pregunta.value.length);
+				elegirSujeto(chip.dataset.sujeto!);
+				animate(pregunta, { scale: [1, 1.015, 1] }, { duration: 0.35 });
+				animate(chip, { scale: [1, 0.94, 1] }, { duration: 0.25 });
+			});
+		}
+
+		function elegirSujeto(nombre: string) {
+			estado.sujeto = nombre;
+			for (const b of qa<HTMLButtonElement>(".sujeto")) {
+				const activo = b.dataset.sujeto === nombre;
+				b.setAttribute("aria-pressed", String(activo));
+				b.style.borderColor = activo
+					? "var(--color-accent)"
+					: "var(--color-glass-border)";
+				b.style.background = activo ? "var(--color-accent-soft)" : "var(--color-card)";
+				b.style.color = activo ? "var(--color-accent)" : "var(--color-secondary)";
+			}
+		}
+
+		for (const b of qa<HTMLButtonElement>(".sujeto")) {
+			b.addEventListener("click", () => elegirSujeto(b.dataset.sujeto!));
+		}
+
+		for (const b of qa<HTMLButtonElement>(".cierre")) {
+			b.addEventListener("click", () => {
+				estado.cierre = b.dataset.cierre!;
+				for (const otro of qa<HTMLButtonElement>(".cierre")) {
+					const activo = otro === b;
+					otro.setAttribute("aria-pressed", String(activo));
+					otro.style.borderColor = activo
+						? "var(--color-primary)"
+						: "var(--color-glass-border)";
+					otro.style.background = activo
+						? "var(--color-primary-soft)"
+						: "var(--color-card)";
+					otro.style.color = activo
+						? "var(--color-primary)"
+						: "var(--color-secondary)";
+				}
+				animate(b, { scale: [1, 0.93, 1] }, { duration: 0.25 });
+			});
+		}
+
+		/* ── Paso 2 ────────────────────────────────────────────── */
+
+		function pintarProb() {
+			const p = Number(deslizador.value);
+			estado.prob = p;
+			valor.textContent = p + " %";
+			valor.style.color = colorProb(p);
+			cobardia.hidden = p !== 50;
+		}
+
+		deslizador.addEventListener("input", () => {
+			pintarProb();
+			animate(valor, { scale: [1.04, 1] }, { duration: 0.18 });
+		});
+
+		sellar.addEventListener("click", () => {
+			estado.sellado = true;
+			sellar.textContent = "Pronóstico sellado";
+			sellar.style.background = "var(--color-success)";
+			animate(sellar, { scale: [1, 0.96, 1] }, { duration: 0.3 });
+			animate(valor, { scale: [1, 1.12, 1], rotate: [0, -2, 0] }, MUELLE);
+		});
+
+		/* ── Paso 3 ────────────────────────────────────────────── */
+
+		function destapar() {
+			const todos = [{ nombre: "Tú", prob: estado.prob }, ...RIVALES];
+
+			destape.innerHTML = todos
+				.map(
+					(j) => `
+					<li class="flex items-center gap-3 rounded-xl border border-hairline bg-card px-4 py-2.5" style="${j.nombre === "Tú" ? "background:var(--color-primary-soft)" : ""}">
+						<span class="w-14 shrink-0 text-sm" style="color:var(--color-${j.nombre === "Tú" ? "foreground" : "secondary"})">${j.nombre}</span>
+						<span class="h-2 flex-1 overflow-hidden rounded-full" style="background:var(--color-hairline)">
+							<span class="barra block h-full rounded-full" style="width:0%;background:${colorProb(j.prob)}"></span>
+						</span>
+						<span class="w-14 shrink-0 text-right font-semibold text-sm tabular-nums" style="color:${colorProb(j.prob)}">${j.prob} %</span>
+					</li>`,
+				)
+				.join("");
+
+			const filas = [...destape.children] as HTMLElement[];
+			animate(
+				filas,
+				{ opacity: [0, 1], y: [16, 0], scale: [0.96, 1] },
+				{ ...MUELLE, delay: stagger(0.08) },
+			);
+			filas.forEach((fila, i) => {
+				const barra = fila.querySelector(".barra") as HTMLElement;
+				animate(
+					barra,
+					{ width: ["0%", todos[i].prob + "%"] },
+					{ ...MUELLE_SUAVE, delay: 0.08 * i + 0.1 },
+				);
+			});
+
+			const prom = Math.round(
+				todos.reduce((a, j) => a + j.prob, 0) / todos.length,
+			);
+			numero(media, 0, prom, " %");
+			media.style.color = colorProb(prom);
+		}
+
+		q<HTMLButtonElement>("#sim-repetir").addEventListener("click", destapar);
+
+		/* ── Paso 4 ────────────────────────────────────────────── */
+
+		const justo = q<HTMLElement>("#sim-justo");
+		const disputa = q<HTMLElement>("#sim-disputa");
+		const gracia = q<HTMLElement>("#sim-gracia");
+
+		function pintarModo() {
+			q<HTMLElement>("#sim-modo-texto").textContent = MODOS[estado.modo];
+			const esJusto = estado.modo === "justo" && estado.resultado !== "anulada";
+			justo.hidden = !esJusto;
+			if (esJusto) {
+				animate(justo, { opacity: [0, 1], y: [10, 0] }, MUELLE);
+				animate(gracia, { width: ["0%", "62%"] }, { duration: 1.6, ease: "easeOut" });
+			}
+		}
+
+		for (const b of qa<HTMLButtonElement>(".modo")) {
+			b.addEventListener("click", () => {
+				estado.modo = b.dataset.modo!;
+				for (const otro of qa<HTMLButtonElement>(".modo")) {
+					const activo = otro === b;
+					otro.setAttribute("aria-pressed", String(activo));
+					otro.style.borderColor = activo
+						? "var(--color-primary)"
+						: "var(--color-glass-border)";
+					otro.style.background = activo
+						? "var(--color-primary-soft)"
+						: "var(--color-card)";
+					otro.style.color = activo
+						? "var(--color-primary)"
+						: "var(--color-secondary)";
+				}
+				disputa.hidden = true;
+				pintarModo();
+			});
+		}
+
+		for (const b of qa<HTMLButtonElement>(".resultado")) {
+			b.addEventListener("click", () => {
+				estado.resultado = b.dataset.resultado as typeof estado.resultado;
+				for (const otro of qa<HTMLButtonElement>(".resultado")) {
+					const activo = otro === b;
+					const color =
+						otro.dataset.resultado === "anulada"
+							? "var(--color-muted)"
+							: "var(--color-primary)";
+					otro.setAttribute("aria-pressed", String(activo));
+					otro.style.borderColor = activo ? color : "var(--color-glass-border)";
+					otro.style.background = activo
+						? otro.dataset.resultado === "anulada"
+							? "var(--color-hairline)"
+							: "var(--color-primary-soft)"
+						: "var(--color-card)";
+					otro.style.color = activo ? color : "var(--color-secondary)";
+				}
+				animate(b, { scale: [1, 0.95, 1] }, { duration: 0.28 });
+				pintarModo();
+			});
+		}
+
+		q<HTMLButtonElement>("#sim-disputar").addEventListener("click", () => {
+			disputa.hidden = false;
+			animate(disputa, { opacity: [0, 1], y: [10, 0] }, MUELLE);
+
+			const reparto = [
+				{ etiqueta: "Sí ocurrió", n: 2, color: "var(--color-success)" },
+				{ etiqueta: "No ocurrió", n: 2, color: "var(--color-danger)" },
+				{ etiqueta: "Fue ambigua", n: 1, color: "var(--color-muted)" },
+			];
+			const total = reparto.reduce((a, r) => a + r.n, 0);
+
+			votos.innerHTML = reparto
+				.map(
+					(r) => `
+					<li>
+						<div class="flex items-baseline justify-between">
+							<span class="text-sm" style="color:var(--color-secondary)">${r.etiqueta}</span>
+							<span class="font-semibold text-sm tabular-nums" style="color:var(--color-foreground)">${r.n}/${total}</span>
+						</div>
+						<div class="mt-1.5 h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
+							<span class="barra block h-full rounded-full" style="width:0%;background:${r.color}"></span>
+						</div>
+					</li>`,
+				)
+				.join("");
+
+			[...votos.querySelectorAll<HTMLElement>(".barra")].forEach((barra, i) => {
+				animate(
+					barra,
+					{ width: ["0%", (reparto[i].n / total) * 100 + "%"] },
+					{ ...MUELLE_SUAVE, delay: 0.1 * i },
+				);
+			});
+
+			q<HTMLElement>("#sim-umbral").textContent =
+				"Para tumbar la propuesta hacen falta dos tercios (4 de 5). Con 2 votos no se alcanza, así que la propuesta queda firme: una minoría interesada no descarrila nada.";
+		});
+
+		/* ── Paso 5 ────────────────────────────────────────────── */
+
+		function pintarMarcador() {
+			const anulada = estado.resultado === "anulada";
+			q<HTMLElement>("#sim-anulada").hidden = !anulada;
+			q<HTMLElement>("#sim-marcador").hidden = anulada;
+			if (anulada) return;
+
+			const ocurrio = estado.resultado === "si";
+			const p = estado.prob;
+
+			q<HTMLElement>("#sim-resumen-prob").textContent = p + " %";
+			q<HTMLElement>("#sim-resumen-res").textContent = ocurrio
+				? "sí ocurrió"
+				: "no ocurrió";
+
+			const indice = indiceDe(p, ocurrio);
+			const elIndice = q<HTMLElement>("#sim-indice");
+			numero(elIndice, 0, indice);
+			elIndice.style.color = colorProb(indice);
+			q<HTMLElement>("#sim-brier").textContent = brierDe(p, ocurrio).toFixed(3);
+
+			const medallas = [
+				"var(--color-oro)",
+				"var(--color-plata)",
+				"var(--color-bronce)",
+			];
+			const clasificacion = [{ nombre: "Tú", prob: p }, ...RIVALES]
+				.map((j) => ({ ...j, indice: indiceDe(j.prob, ocurrio) }))
+				.sort((a, b) => b.indice - a.indice);
+
+			tabla.innerHTML = clasificacion
+				.map((j, i) => {
+					const tu = j.nombre === "Tú";
+					return `
+					<li class="flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t" : ""}" style="border-color:var(--color-hairline);${tu ? "background:var(--color-primary-soft)" : ""}">
+						<span class="w-6 shrink-0 text-center font-bold text-sm tabular-nums" style="color:${medallas[i] ?? "var(--color-muted)"}">${i + 1}</span>
+						<span class="flex-1 text-sm" style="color:var(--color-${tu ? "foreground" : "secondary"});font-weight:${tu ? 600 : 400}">${j.nombre}</span>
+						<span class="text-sm tabular-nums" style="color:var(--color-muted)">${j.prob} %</span>
+						<span class="w-10 shrink-0 text-right font-semibold text-sm tabular-nums" style="color:var(--color-foreground)">${j.indice}</span>
+					</li>`;
+				})
+				.join("");
+
+			animate(
+				[...tabla.children] as HTMLElement[],
+				{ opacity: [0, 1], x: [-14, 0] },
+				{ ...MUELLE, delay: stagger(0.06, { startDelay: 0.15 }) },
+			);
+		}
+
+		/* ── Navegación ────────────────────────────────────────── */
+
+		for (const paso of pasos) {
+			paso.addEventListener("click", () => irA(Number(paso.dataset.paso)));
+		}
+		siguiente.addEventListener("click", () =>
+			irA(estado.paso === paneles.length ? 1 : estado.paso + 1),
+		);
+		atras.addEventListener("click", () => irA(estado.paso - 1));
+
+		elegirSujeto("Nadie en concreto");
+		qa<HTMLButtonElement>(".cierre")[3].click();
+		qa<HTMLButtonElement>(".modo")[1].click();
+		qa<HTMLButtonElement>(".resultado")[0].click();
+		pintarProb();
+		pintarStepper();
+	}
+</script>
