@@ -1,46 +1,159 @@
 ---
+/**
+ * El interruptor de tema, disfrazado de astro en el fondo del hero.
+ *
+ * Va dentro de un contenedor `relative` (la sección del hero) y se sale por la
+ * esquina superior derecha a propósito: lo que queda dentro del lienzo es la
+ * franja vacía de arriba, que es la única zona del hero donde ninguna caja de
+ * texto se come el clic.
+ */
 ---
 
 <button
 	type="button"
 	id="cambiar-tema"
-	class="transicion-tema flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-glass-border)] bg-[color:var(--color-glass)] text-[color:var(--color-secondary)] backdrop-blur hover:border-[color:var(--color-primary)] hover:text-[color:var(--color-primary)]"
+	class="astro"
 	aria-label="Cambiar entre modo claro y oscuro"
 >
-	<svg class="icono-claro h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-		<circle cx="12" cy="12" r="4"></circle>
-		<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-	</svg>
-	<svg class="icono-oscuro h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-		<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
-	</svg>
+	<span class="halo" aria-hidden="true"></span>
+	<span class="disco" aria-hidden="true"></span>
+	<span class="chispas" aria-hidden="true"></span>
+	<span class="pista">Cambiar tema</span>
 </button>
 
 <style>
-	/* Se enseña el icono del tema al que vas a cambiar, no el del actual.
-	   Como el tema puede venir del sistema, la condición es doble: o el
-	   atributo lo dice, o no hay atributo y lo dice el sistema. */
-	.icono-oscuro { display: none; }
-
-	:global(html[data-tema='oscuro']) .icono-oscuro { display: none; }
-	:global(html[data-tema='oscuro']) .icono-claro { display: block; }
-	:global(html[data-tema='claro']) .icono-claro { display: none; }
-	:global(html[data-tema='claro']) .icono-oscuro { display: block; }
-
-	@media (prefers-color-scheme: dark) {
-		:global(html:not([data-tema])) .icono-claro { display: block; }
-		:global(html:not([data-tema])) .icono-oscuro { display: none; }
+	.astro {
+		position: absolute;
+		top: clamp(-11rem, -9vw, -4rem);
+		right: clamp(-9rem, -7vw, -3rem);
+		width: clamp(15rem, 34vw, 27rem);
+		aspect-ratio: 1;
+		z-index: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		cursor: pointer;
+		opacity: 0.45;
+		transition:
+			opacity 0.45s ease,
+			transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 	}
-	@media (prefers-color-scheme: light) {
-		:global(html:not([data-tema])) .icono-claro { display: none; }
-		:global(html:not([data-tema])) .icono-oscuro { display: block; }
+
+	.astro:hover,
+	.astro:focus-visible {
+		opacity: 0.85;
+		transform: scale(1.05) rotate(-6deg);
+	}
+
+	.astro:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 8px;
+		border-radius: 50%;
+	}
+
+	.astro:active {
+		transform: scale(0.98);
+	}
+
+	/**
+	 * Sol o luna, sin un solo selector de tema.
+	 *
+	 * La máscara es un degradado radial cuyo centro vale `#000` (opaco: se ve)
+	 * en claro y `#0000` (transparente: se recorta) en oscuro. Como
+	 * `light-dark()` resuelve por `color-scheme`, el mordisco aparece y
+	 * desaparece solo, y sigue igual al ajuste del sistema que al botón.
+	 */
+	.disco {
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: radial-gradient(
+			circle at 32% 28%,
+			var(--color-primary-hover),
+			var(--color-primary) 48%,
+			var(--color-primary-active) 100%
+		);
+		-webkit-mask-image: radial-gradient(
+			circle at 76% 20%,
+			light-dark(#000, #0000) 0 45%,
+			#000 46%
+		);
+		mask-image: radial-gradient(
+			circle at 76% 20%,
+			light-dark(#000, #0000) 0 45%,
+			#000 46%
+		);
+		transition: background 0.4s ease;
+	}
+
+	.halo {
+		position: absolute;
+		inset: -20%;
+		border-radius: 50%;
+		background: radial-gradient(
+			circle,
+			var(--color-primary-soft) 0 42%,
+			transparent 72%
+		);
+	}
+
+	/* Estrellas: solo pintan en oscuro, por el mismo motivo que el mordisco.
+	   Caen hacia abajo a la izquierda del disco, que es la parte que queda
+	   dentro del lienzo. */
+	.chispas::before,
+	.chispas::after {
+		content: '';
+		position: absolute;
+		height: 3px;
+		width: 3px;
+		border-radius: 50%;
+		background: light-dark(transparent, var(--color-foreground));
+	}
+
+	.chispas::before {
+		left: 6%;
+		top: 74%;
+		box-shadow:
+			2.5rem 2.2rem 0 -0.5px light-dark(transparent, var(--color-foreground)),
+			7rem 3.6rem 0 0 light-dark(transparent, var(--color-secondary));
+	}
+
+	.chispas::after {
+		left: 26%;
+		top: 92%;
+		box-shadow: 5.5rem -1.5rem 0 -0.5px
+			light-dark(transparent, var(--color-secondary));
+	}
+
+	/* Sin esto nadie adivina que el adorno se pulsa. */
+	.pista {
+		position: absolute;
+		right: 52%;
+		bottom: 6%;
+		white-space: nowrap;
+		border-radius: 999px;
+		background: var(--color-glass-strong);
+		padding: 0.35rem 0.75rem;
+		color: var(--color-secondary);
+		font-size: 0.75rem;
+		opacity: 0;
+		transition: opacity 0.3s ease;
+	}
+
+	.astro:hover .pista,
+	.astro:focus-visible .pista {
+		opacity: 1;
+	}
+
+	@media (max-width: 640px) {
+		.pista {
+			display: none;
+		}
 	}
 </style>
 
 <script>
-	const boton = document.getElementById("cambiar-tema");
-
-	boton?.addEventListener("click", () => {
+	document.getElementById("cambiar-tema")?.addEventListener("click", () => {
 		const raiz = document.documentElement;
 		const actual =
 			raiz.dataset.tema ??

@@ -1,5 +1,6 @@
 ---
 import BotonTienda from "./BotonTienda.astro";
+import CambiarTema from "./CambiarTema.astro";
 
 const ENLACE_IOS: string | null = null;
 const ENLACE_ANDROID: string | null = null;
@@ -8,6 +9,8 @@ const ENLACE_ANDROID: string | null = null;
 <section
 	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pt-28 pb-16 text-center gap-4"
 >
+	<CambiarTema />
+
 	<!-- <img
 		src="/marca/yatti-logo-gradient.png"
 		alt="Yatti!"
@@ -17,19 +20,19 @@ const ENLACE_ANDROID: string | null = null;
 	/> -->
 
 	<h1
-		class="w-full max-w-5xl font-heading text-9xl leading-[.9] tracking-tighter font-bold bg-linear-to-br from-primary from-50% to-primary-active bg-clip-text text-transparent"
+		class="relative z-10 w-full max-w-5xl font-heading text-9xl leading-[.9] tracking-tighter font-bold bg-linear-to-br from-primary from-50% to-primary-active bg-clip-text text-transparent"
 	>
 		Predice la vida con tus amigos
 	</h1>
 
 	<p
-		class=" w-full max-w-xl text-secondary text-lg leading-relaxed"
+		class="relative z-10 w-full max-w-xl text-secondary text-lg leading-relaxed"
 	>
 		En tu grupo ya hacéis predicciones todo el rato. Yatti les pone porcentaje,
 		fecha y clasificación.
 	</p>
 
-	<div class="mt-10 flex flex-col gap-3 sm:flex-row">
+	<div class="relative z-10 mt-10 flex flex-col gap-3 sm:flex-row">
 		<BotonTienda tienda="ios" enlace={ENLACE_IOS}>
 			<svg class="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 				<path
@@ -49,7 +52,7 @@ const ENLACE_ANDROID: string | null = null;
 
 	<a
 		href="#como-funciona"
-		class="group mt-14 inline-flex flex-col items-center gap-2 text-[color:var(--color-muted)] text-sm transition-colors hover:text-[color:var(--color-primary)]"
+		class="group relative z-10 mt-14 inline-flex flex-col items-center gap-2 text-[color:var(--color-muted)] text-sm transition-colors hover:text-[color:var(--color-primary)]"
 	>
 		Cómo funciona
 		<svg
