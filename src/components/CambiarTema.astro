@@ -1,0 +1,53 @@
+---
+---
+
+<button
+	type="button"
+	id="cambiar-tema"
+	class="transicion-tema flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-glass-border)] bg-[color:var(--color-glass)] text-[color:var(--color-secondary)] backdrop-blur hover:border-[color:var(--color-primary)] hover:text-[color:var(--color-primary)]"
+	aria-label="Cambiar entre modo claro y oscuro"
+>
+	<svg class="icono-claro h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+		<circle cx="12" cy="12" r="4"></circle>
+		<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+	</svg>
+	<svg class="icono-oscuro h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+	</svg>
+</button>
+
+<style>
+	/* Se enseña el icono del tema al que vas a cambiar, no el del actual.
+	   Como el tema puede venir del sistema, la condición es doble: o el
+	   atributo lo dice, o no hay atributo y lo dice el sistema. */
+	.icono-oscuro { display: none; }
+
+	:global(html[data-tema='oscuro']) .icono-oscuro { display: none; }
+	:global(html[data-tema='oscuro']) .icono-claro { display: block; }
+	:global(html[data-tema='claro']) .icono-claro { display: none; }
+	:global(html[data-tema='claro']) .icono-oscuro { display: block; }
+
+	@media (prefers-color-scheme: dark) {
+		:global(html:not([data-tema])) .icono-claro { display: block; }
+		:global(html:not([data-tema])) .icono-oscuro { display: none; }
+	}
+	@media (prefers-color-scheme: light) {
+		:global(html:not([data-tema])) .icono-claro { display: none; }
+		:global(html:not([data-tema])) .icono-oscuro { display: block; }
+	}
+</style>
+
+<script>
+	const boton = document.getElementById("cambiar-tema");
+
+	boton?.addEventListener("click", () => {
+		const raiz = document.documentElement;
+		const actual =
+			raiz.dataset.tema ??
+			(matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro");
+		const nuevo = actual === "oscuro" ? "claro" : "oscuro";
+
+		raiz.dataset.tema = nuevo;
+		localStorage.setItem("tema", nuevo);
+	});
+</script>

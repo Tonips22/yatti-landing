@@ -1,0 +1,245 @@
+---
+import Cabecera from "@/components/Cabecera.astro";
+import PieDePagina from "@/components/PieDePagina.astro";
+import Layout from "@/layouts/Layout.astro";
+
+/**
+ * Términos de uso y política de privacidad.
+ *
+ * ⚠️ ES LA URL PÚBLICA QUE EXIGEN LAS DOS TIENDAS. App Store y Google Play
+ * piden una dirección web, no una pantalla dentro de la app. Esta página es
+ * esa dirección.
+ *
+ * ⚠️ TIENE QUE DECIR LO MISMO QUE `src/app/terms.tsx` en el repo de la app.
+ * Son dos copias del mismo documento y no hay nada que las sincronice: si se
+ * cambia una, se cambia la otra EN EL MISMO COMMIT. Una política que va por
+ * detrás del código es peor que no tenerla, porque deja de ser cierta.
+ *
+ * ⚠️ Redactado a partir del código, NO revisado por un abogado.
+ */
+
+const RESPONSABLE = "Antonio García Torres";
+const CONTACTO = "yatti277@gmail.com";
+const ACTUALIZADO = "13 de septiembre de 2026";
+const EDAD_MINIMA = 16;
+
+type Seccion = { titulo: string; intro?: string; puntos: string[] };
+
+const SECCIONES: Seccion[] = [
+  {
+    titulo: "En resumen",
+    intro:
+      "Lo importante, en cuatro líneas. Debajo está el detalle, pero esto ya es cierto por sí solo.",
+    puntos: [
+      "Yatti es un juego de predicciones entre amigos. Se compite por posición en una clasificación: nunca hay dinero de por medio, ni premios en metálico, ni apuestas.",
+      "Lo que escribes lo ven los miembros de tu liga, nadie más. No hay predicciones públicas ni buscador de personas.",
+      "Recogemos lo mínimo para que el juego funcione, más datos de uso sin contenido para saber si la app se entiende. Nunca vendemos datos ni hacemos publicidad con ellos.",
+      "Puedes borrar tu cuenta entera desde tu perfil, sin pedir permiso a nadie y sin escribir a ningún sitio.",
+    ],
+  },
+  {
+    titulo: "Quién puede usar Yatti",
+    puntos: [
+      `Hay que tener al menos ${EDAD_MINIMA} años. Al registrarte declaras que los tienes.`,
+      "Una persona, una cuenta. No se pueden crear cuentas en nombre de otra persona ni suplantar a nadie.",
+      "Si detectamos una cuenta de alguien por debajo de la edad mínima, se elimina junto con sus datos.",
+    ],
+  },
+  {
+    titulo: "Tu responsabilidad sobre lo que escribes",
+    intro:
+      "Las predicciones son texto libre que escribes tú. Yatti no las revisa antes de publicarse, así que la responsabilidad de su contenido es de quien las crea.",
+    puntos: [
+      "Eres el único responsable de las predicciones que creas y de los motivos con los que disputas un resultado.",
+      "No publicarás contenido que acose, amenace, humille o difame a nadie.",
+      "No publicarás datos sensibles de otras personas —salud, orientación sexual, ideología, religión, origen étnico, vida sexual— sin su consentimiento explícito.",
+      "No usarás Yatti para organizar apuestas con dinero real. El juego es por puntos y posición; meter dinero por fuera va contra estos términos.",
+      "Yatti puede retirar contenido y cerrar cuentas que incumplan estas normas.",
+    ],
+  },
+  {
+    titulo: "Predicciones sobre otras personas",
+    intro:
+      "Es la parte más delicada de la app y por eso va aparte: se puede predecir sobre gente que no está en Yatti y que no ha aceptado nada.",
+    puntos: [
+      "Antes de escribir sobre alguien, pregúntate si te parecería bien que lo leyera. En una liga privada de amigos, casi siempre acaba leyéndose.",
+      `Si una persona pide que se retire una predicción sobre ella, se retira. No hace falta que esté registrada ni que explique por qué: basta con escribir a ${CONTACTO}.`,
+      "Cualquier miembro de la liga puede reportar una predicción. El aviso le llega al administrador de la liga, que decide.",
+      "El autor de una predicción, o un administrador de la liga, pueden retirarla en cualquier momento. Al retirarla deja de verse para todos.",
+      "Etiquetar a alguien como sujeto de una predicción solo se puede hacer con miembros de tu liga, y es solo una etiqueta: no cambia quién puede leerla.",
+    ],
+  },
+  {
+    titulo: "Cómo funciona el juego",
+    puntos: [
+      "Los puntos, las clasificaciones, las rachas y los títulos no tienen valor económico, no se pueden canjear ni transferir, y pueden recalcularse si corregimos un fallo.",
+      "Quién resuelve una predicción depende del modo que elija quien crea la liga: el autor directamente, el grupo con una ventana para disputar, o un árbitro votado.",
+      "Una predicción se puede anular. Anular significa que no afecta a la puntuación de nadie.",
+      "Si borras tu cuenta, las ligas que creaste se borran con sus predicciones. Cuando la liga tiene más miembros, la propiedad pasa a otro antes de borrarte.",
+      "Puedes salir de una liga cuando quieras. Tus predicciones y pronósticos se quedan, porque forman parte de la partida del grupo.",
+    ],
+  },
+  {
+    titulo: "Qué datos recogemos y para qué",
+    intro:
+      "Solo lo que la app necesita para funcionar, más datos de uso para entender si se entiende. Cada punto es una tabla real de la base de datos.",
+    puntos: [
+      "De tu cuenta: tu email y tu contraseña cifrada; o tu identificador de Apple o de Google si entras con ellos. Sirve para dejarte entrar y para recuperar el acceso.",
+      "De tu perfil: el nombre con el que te ven en las ligas y tu foto, si la pones. Lo ven los miembros de las ligas que compartes.",
+      "Del juego: tus ligas, las predicciones que escribes, el porcentaje que asignas a cada una, los resultados propuestos, las disputas con su motivo y los votos. Es el contenido del juego; sin ello no hay juego.",
+      "De las notificaciones: un identificador de tu dispositivo (token de push) para poder avisarte. Se borra al cerrar sesión o al borrar la cuenta.",
+      "De uso de la app (PostHog): qué pasos das —te registras, creas una liga, pronosticas, miras la clasificación— y datos de forma, como el modo de resolución elegido o si rellenaste el criterio. Nunca el contenido: ni enunciados, ni nombres de liga, ni nombres de personas, ni el porcentaje que pronosticaste.",
+      "De errores (Sentry): cuando algo falla, el fallo técnico y en qué pantalla ocurrió, para poder arreglarlo. Sin grabación de pantalla y sin datos personales adjuntos.",
+      "Lo que NO recogemos: ubicación, agenda de contactos, publicidad, seguimiento entre apps ni grabaciones de tu pantalla. Y nunca vendemos datos a nadie.",
+    ],
+  },
+  {
+    titulo: "Con quién se comparten",
+    intro:
+      "Con nadie, salvo los proveedores técnicos que hacen falta para que la app funcione. Están todos aquí, ninguno hace publicidad y todos tratan los datos por cuenta nuestra.",
+    puntos: [
+      "Supabase — base de datos, cuentas y almacenamiento de fotos. Servidores en la Unión Europea (París).",
+      "PostHog — analítica de producto. Servidores en la Unión Europea (Fráncfort).",
+      "Sentry — registro de errores. Servidores en la Unión Europea (Fráncfort).",
+      "Expo — servicio de envío de notificaciones. Para entregarte un aviso, el token de tu dispositivo y el texto del aviso pasan por sus servidores, en Estados Unidos, y de ahí a Apple o a Google.",
+      "Apple y Google — entregan la notificación a tu móvil, y verifican tu identidad si entras con su cuenta.",
+    ],
+  },
+  {
+    titulo: "Tus fotos son públicas por su enlace",
+    intro:
+      "Es una decisión consciente y conviene decirla claro, porque no es evidente.",
+    puntos: [
+      "Tu foto de perfil y la foto de tu liga se guardan con una dirección de internet que no exige estar identificado para abrirse.",
+      "En la práctica esa dirección no la conoce nadie fuera de tus ligas, pero quien la tenga puede abrirla. Es el mismo funcionamiento que en la mayoría de redes sociales.",
+      "Por eso: no subas como foto de perfil nada que no quieras que pueda verse fuera de la app.",
+      "Al borrar tu cuenta, o al quitar la foto desde tu perfil, el fichero se borra del almacenamiento.",
+    ],
+  },
+  {
+    titulo: "Cuánto tiempo se guardan",
+    puntos: [
+      "Tus datos se guardan mientras tengas la cuenta abierta.",
+      "Al borrar la cuenta se eliminan tu perfil, tu foto, tus pronósticos, tus tokens de notificación y las ligas que creaste, con sus predicciones.",
+      "El borrado es inmediato y no se puede deshacer. Las copias de seguridad del proveedor se rotan solas en un plazo corto.",
+      "Las predicciones que escribiste en ligas de otras personas pueden permanecer, porque forman parte de la partida de ese grupo. Si quieres que se retiren, escríbenos.",
+    ],
+  },
+  {
+    titulo: "Tus derechos",
+    intro: `El Reglamento General de Protección de Datos te da estos derechos, y se ejercen escribiendo a ${CONTACTO}. Respondemos en un plazo máximo de un mes.`,
+    puntos: [
+      "Acceder a los datos que tenemos sobre ti y pedir una copia.",
+      "Corregir los que sean inexactos. El nombre y la foto los puedes cambiar tú desde tu perfil.",
+      "Borrarlos. Esto lo puedes hacer tú directamente: Perfil → Borrar cuenta.",
+      "Oponerte a que tratemos tus datos, o pedir que limitemos su uso.",
+      "Reclamar ante la Agencia Española de Protección de Datos (www.aepd.es) si crees que no hemos cumplido.",
+      `Responsable del tratamiento: ${RESPONSABLE}. Contacto: ${CONTACTO}.`,
+    ],
+  },
+  {
+    titulo: "Si en el futuro hay pagos",
+    intro:
+      "Hoy Yatti es gratis y no hay ninguna compra dentro de la app. Cuando la haya, funcionará así.",
+    puntos: [
+      "Las suscripciones se cobran a través de App Store o Google Play. El pago lo gestionan ellos: nosotros no vemos ni guardamos tu tarjeta.",
+      "Se usará RevenueCat para saber si tu suscripción está activa. Recibe un identificador de tu cuenta, nunca datos bancarios.",
+      "La parte gratuita seguirá siendo suficiente para jugar: predicciones, ligas, clasificación y estadísticas básicas.",
+      "Cancelar se hace desde los ajustes de tu tienda, no desde aquí, y la renovación se detiene al final del periodo ya pagado.",
+      "En ningún caso se podrá pagar para ganar posiciones ni para obtener premios en metálico.",
+    ],
+  },
+  {
+    titulo: "Cambios y contacto",
+    puntos: [
+      "Si cambiamos algo importante de este documento, te lo diremos dentro de la app antes de que aplique.",
+      `Para cualquier cosa: ${CONTACTO}.`,
+      "El servicio se ofrece tal cual. Ponemos cuidado en que funcione, pero no podemos garantizar que no haya interrupciones o fallos.",
+    ],
+  },
+];
+---
+
+<Layout
+  titulo="Privacidad y términos · Yatti"
+  descripcion="Términos de uso y política de privacidad de Yatti: qué datos recogemos, con quién se comparten y cómo ejercer tus derechos."
+>
+  <Cabecera />
+
+  <article class="mx-auto max-w-2xl px-5 pt-32 pb-16 sm:pt-40 sm:pb-24">
+    <a
+      href="/"
+      class="mb-8 inline-flex items-center gap-2 text-[color:var(--color-muted)] text-sm transition-colors hover:text-[color:var(--color-primary)]"
+    >
+      <svg
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+      </svg>
+      Volver
+    </a>
+
+    <h1
+      class="font-[family-name:var(--font-heading)] text-4xl text-[color:var(--color-foreground)]"
+      style="font-weight:700"
+    >
+      Privacidad y términos
+    </h1>
+    <p
+      class="mt-3 inline-block rounded-full px-3 py-1.5 font-medium text-xs"
+      style="background:var(--color-primary-soft);color:var(--color-primary)"
+    >
+      Actualizado el {ACTUALIZADO}
+    </p>
+
+    <div class="mt-12 space-y-12">
+      {
+        SECCIONES.map((seccion) => (
+          <section class="revelar">
+            <h2
+              class="mb-3 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+              style="font-weight:700"
+            >
+              {seccion.titulo}
+            </h2>
+            {seccion.intro && (
+              <p class="mb-4 text-[color:var(--color-muted)] leading-relaxed">
+                {seccion.intro}
+              </p>
+            )}
+            <ol
+              class="transicion-tema overflow-hidden rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)]"
+              role="list"
+            >
+              {seccion.puntos.map((punto, i) => (
+                <li
+                  class={`flex gap-3 px-4 py-3.5 ${i > 0 ? "border-[color:var(--color-hairline)] border-t" : ""}`}
+                >
+                  <span
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-bold text-xs"
+                    style="background:var(--color-primary-soft);color:var(--color-primary)"
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                  <span class="flex-1 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+                    {punto}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
+      }
+    </div>
+  </article>
+
+  <PieDePagina />
+</Layout>

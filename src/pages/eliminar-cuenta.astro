@@ -1,0 +1,325 @@
+---
+import Cabecera from "@/components/Cabecera.astro";
+import PieDePagina from "@/components/PieDePagina.astro";
+import Layout from "@/layouts/Layout.astro";
+
+/**
+ * Cómo eliminar tu cuenta de Yatti.
+ *
+ * ⚠️ ES UNA URL OBLIGATORIA DE GOOGLE PLAY. Se declara en el formulario de
+ * "Recogida de datos y seguridad" y aparece en la ficha de la tienda. Google
+ * exige tres cosas y las tres están abajo:
+ *   1. Nombrar la app o al desarrollador de la ficha.
+ *   2. Explicar con claridad los pasos para solicitar el borrado.
+ *   3. Decir qué datos se borran, cuáles se conservan y cuánto tiempo.
+ *
+ * Existe aunque la app ya tenga el borrado dentro, y por un motivo concreto:
+ * quien ya ha desinstalado la app no puede usar ese botón, y sigue teniendo
+ * derecho a pedirlo.
+ *
+ * ⚠️ Lo que dice aquí tiene que seguir siendo verdad. Sale de leer
+ * `supabase/functions/borrar-cuenta/index.ts` y las claves foráneas del
+ * esquema: 11 tablas van con `on delete cascade` y 5 con `on delete set null`
+ * —esas últimas son justo lo que sobrevive, anonimizado—. Si el esquema
+ * cambia, esta página cambia.
+ */
+
+const CONTACTO = "yatti277@gmail.com";
+const ACTUALIZADO = "13 de septiembre de 2026";
+
+/** ⚠️ Confirmar contra el plan de Supabase contratado antes de publicar. */
+const DIAS_COPIAS = 30;
+
+const SE_BORRA = [
+  "Tu cuenta de acceso: el correo electrónico, la contraseña cifrada y el enlace con Apple o Google si entraste con ellos.",
+  "Tu perfil: el nombre con el que te veían en las ligas.",
+  "Tu foto de perfil, que se elimina también del almacenamiento.",
+  "Todos tus pronósticos, es decir, los porcentajes que asignaste a cada predicción.",
+  "Los identificadores de tus dispositivos para notificaciones (tokens de push).",
+  "Tus votos en resoluciones y en elecciones de árbitro, y los reportes que hubieras enviado.",
+  "Las ligas que creaste, con todas sus predicciones — salvo que tengan más miembros: en ese caso la propiedad pasa a otra persona del grupo y la liga continúa sin ti.",
+];
+
+const SE_CONSERVA = [
+  "Las predicciones que escribiste en ligas de otras personas. Forman parte de la partida de ese grupo y borrarlas recalcularía la clasificación de todos los demás. Dejan de estar asociadas a ti: aparecen sin autor y tu nombre ya no es visible.",
+  "Los resultados que propusiste o disputaste, con el mismo tratamiento: el contenido permanece, tu identidad se desvincula.",
+  "Registros técnicos de errores y de uso que solo contienen un identificador opaco, nunca tu nombre ni tu correo. Si quieres que también se eliminen, pídelo por correo y se hace.",
+];
+---
+
+<Layout
+  titulo="Eliminar tu cuenta · Yatti"
+  descripcion="Cómo eliminar tu cuenta de Yatti y los datos asociados: pasos, qué se borra, qué se conserva y durante cuánto tiempo."
+>
+  <Cabecera />
+
+  <article class="mx-auto max-w-2xl px-5 pt-32 pb-16 sm:pt-40 sm:pb-24">
+    <a
+      href="/"
+      class="mb-8 inline-flex items-center gap-2 text-[color:var(--color-muted)] text-sm transition-colors hover:text-[color:var(--color-primary)]"
+    >
+      <svg
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+      </svg>
+      Volver
+    </a>
+
+    <h1
+      class="font-[family-name:var(--font-heading)] text-4xl text-[color:var(--color-foreground)]"
+      style="font-weight:700"
+    >
+      Eliminar tu cuenta de Yatti
+    </h1>
+    <p class="mt-4 text-[color:var(--color-secondary)] leading-relaxed">
+      Puedes borrar tu cuenta de <strong>Yatti</strong> y los datos asociados
+      cuando quieras, tú mismo y sin pedir permiso a nadie. Aquí están las dos
+      formas de hacerlo y exactamente qué ocurre con cada dato.
+    </p>
+    <p
+      class="mt-4 inline-block rounded-full px-3 py-1.5 font-medium text-xs"
+      style="background:var(--color-primary-soft);color:var(--color-primary)"
+    >
+      Actualizado el {ACTUALIZADO}
+    </p>
+
+    <!-- ── Vía 1: desde la app ─────────────────────────────────── -->
+    <section class="revelar mt-12">
+      <h2
+        class="mb-4 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Desde la app (inmediato)
+      </h2>
+      <ol
+        class="transicion-tema overflow-hidden rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)]"
+      >
+        {
+          [
+            "Abre Yatti e inicia sesión con tu cuenta.",
+            "Ve a la pestaña Perfil, abajo a la derecha.",
+            "Baja hasta el final y pulsa «Borrar cuenta».",
+            "Confirma en el aviso que aparece. El borrado es inmediato y no se puede deshacer.",
+          ].map((paso, i) => (
+            <li
+              class={`flex gap-3 px-4 py-3.5 ${i > 0 ? "border-[color:var(--color-hairline)] border-t" : ""}`}
+            >
+              <span
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-bold text-xs"
+                style="background:var(--color-primary-soft);color:var(--color-primary)"
+              >
+                {i + 1}
+              </span>
+              <span class="flex-1 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+                {paso}
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <!-- ── Vía 2: por correo ───────────────────────────────────── -->
+    <section class="revelar mt-10">
+      <h2
+        class="mb-2 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Por correo (si ya desinstalaste la app)
+      </h2>
+      <p class="mb-4 text-[color:var(--color-muted)] leading-relaxed">
+        Escríbenos desde la misma dirección con la que te registraste, pidiendo
+        que se elimine tu cuenta. Si entraste con Apple o con Google, usa esa
+        misma cuenta de correo. Respondemos en un plazo máximo de un mes, y en
+        la práctica en unos días.
+      </p>
+      <a
+        href={`mailto:${CONTACTO}?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta`}
+        class="inline-block rounded-2xl bg-[color:var(--color-primary)] px-6 py-3.5 font-semibold text-[color:var(--color-on-primary)] transition-all duration-200 hover:scale-105 hover:bg-[color:var(--color-primary-hover)]"
+      >
+        Escribir a {CONTACTO}
+      </a>
+    </section>
+
+    <!-- ── Qué se borra ────────────────────────────────────────── -->
+    <section class="revelar mt-14">
+      <h2
+        class="mb-4 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Qué se elimina
+      </h2>
+      <ul
+        class="transicion-tema overflow-hidden rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)]"
+      >
+        {
+          SE_BORRA.map((linea, i) => (
+            <li
+              class={`flex gap-3 px-4 py-3.5 ${i > 0 ? "border-[color:var(--color-hairline)] border-t" : ""}`}
+            >
+              <svg
+                class="mt-0.5 h-5 w-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--color-danger)"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+              <span class="flex-1 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+                {linea}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- ── Qué se conserva ─────────────────────────────────────── -->
+    <section class="revelar mt-10">
+      <h2
+        class="mb-2 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Qué se conserva, y por qué
+      </h2>
+      <p class="mb-4 text-[color:var(--color-muted)] leading-relaxed">
+        Yatti es un juego de grupo, así que hay contenido que no es solo tuyo:
+        borrarlo cambiaría la partida de otras personas. Eso se conserva, pero
+        <strong class="text-[color:var(--color-secondary)]">
+          desvinculado de tu identidad</strong
+        >.
+      </p>
+      <ul
+        class="transicion-tema overflow-hidden rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)]"
+      >
+        {
+          SE_CONSERVA.map((linea, i) => (
+            <li
+              class={`flex gap-3 px-4 py-3.5 ${i > 0 ? "border-[color:var(--color-hairline)] border-t" : ""}`}
+            >
+              <svg
+                class="mt-0.5 h-5 w-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--color-muted)"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              <span class="flex-1 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+                {linea}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- ── Plazos ──────────────────────────────────────────────── -->
+    <section class="revelar mt-10">
+      <h2
+        class="mb-4 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Plazos de conservación
+      </h2>
+      <div
+        class="transicion-tema rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)] p-5"
+      >
+        <p class="mb-3 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+          <strong class="text-[color:var(--color-foreground)]">Inmediato.</strong>
+          Al confirmar el borrado en la app, los datos de la lista de arriba se
+          eliminan de la base de datos en ese mismo momento. No hay periodo de
+          gracia ni papelera: no se puede recuperar la cuenta después.
+        </p>
+        <p class="mb-3 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+          <strong class="text-[color:var(--color-foreground)]">
+            Hasta {DIAS_COPIAS} días
+          </strong>
+          en las copias de seguridad automáticas del proveedor de base de datos,
+          que se rotan solas y no son accesibles desde la aplicación.
+        </p>
+        <p class="text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+          <strong class="text-[color:var(--color-foreground)]">
+            Sin plazo
+          </strong>
+          para el contenido de la lista «qué se conserva», que permanece de forma
+          anónima como parte de la partida del grupo. Si quieres que también se
+          retire, pídelo por correo y se retira.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Borrado parcial ─────────────────────────────────────── -->
+    <section class="revelar mt-10">
+      <h2
+        class="mb-2 font-[family-name:var(--font-heading)] text-xl text-[color:var(--color-foreground)]"
+        style="font-weight:700"
+      >
+        Borrar solo algunas cosas, sin perder la cuenta
+      </h2>
+      <p class="mb-4 text-[color:var(--color-muted)] leading-relaxed">
+        No hace falta borrarlo todo para quitar algo concreto. Desde la propia
+        app puedes:
+      </p>
+      <ul
+        class="transicion-tema overflow-hidden rounded-2xl border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)]"
+      >
+        {
+          [
+            "Quitar tu foto de perfil: Perfil → toca tu foto → «Quitar foto». El fichero se borra del almacenamiento.",
+            "Cambiar el nombre con el que te ven, desde tu perfil.",
+            "Eliminar una predicción que hayas creado, mientras siga abierta.",
+            "Retirar una predicción tuya en cualquier momento: deja de verse para todo el grupo.",
+            "Salir de una liga: dejas de aparecer en ella y de tener acceso a su contenido.",
+            `Pedir por correo a ${CONTACTO} que se elimine cualquier otro dato concreto, incluidos los registros técnicos.`,
+          ].map((linea, i) => (
+            <li
+              class={`flex gap-3 px-4 py-3.5 ${i > 0 ? "border-[color:var(--color-hairline)] border-t" : ""}`}
+            >
+              <svg
+                class="mt-0.5 h-5 w-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--color-success)"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 12.5l5 5L20 6.5" />
+              </svg>
+              <span class="flex-1 text-[color:var(--color-secondary)] text-[15px] leading-relaxed">
+                {linea}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <p class="mt-12 text-center text-[color:var(--color-muted)] text-sm">
+      Más detalle en la <a
+        href="/privacidad"
+        class="underline transition-colors hover:text-[color:var(--color-primary)]"
+        >política de privacidad</a
+      >.
+    </p>
+  </article>
+
+  <PieDePagina />
+</Layout>

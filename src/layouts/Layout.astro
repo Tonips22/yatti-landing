@@ -1,5 +1,19 @@
 ---
 import "@styles/globals.css";
+
+interface Props {
+	titulo?: string;
+	descripcion?: string;
+	imagen?: string;
+}
+
+const {
+	titulo = "Yatti! · Predicciones con tus amigos",
+	descripcion = "Predicciones sobre tus amigos. Pon tu porcentaje, resolvedlo juntos y sube en la clasificación. Sin dinero, sin apuestas, solo el orgullo de ser el oráculo del grupo.",
+	imagen = "/marca/yatti-icon.png",
+} = Astro.props;
+
+const canonica = new URL(Astro.url.pathname, Astro.site ?? "https://yatti.app");
 ---
 
 <!doctype html>
@@ -10,36 +24,109 @@ import "@styles/globals.css";
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Yatti! | Crea predicciones con amigos</title>
+		<title>{titulo}</title>
+		<meta name="description" content={descripcion} />
+		<link rel="canonical" href={canonica} />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Yatti!" />
+		<meta property="og:title" content={titulo} />
+		<meta property="og:description" content={descripcion} />
+		<meta property="og:image" content={new URL(imagen, canonica)} />
+		<meta property="og:locale" content="es_ES" />
+		<meta name="twitter:card" content="summary_large_image" />
+
+		<meta name="theme-color" content="#f4f4f6" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+
+		<link rel="preload" href="/fonts/Inter-Regular.ttf" as="font" type="font/ttf" crossorigin />
+		<link rel="preload" href="/fonts/SpaceGrotesk-Bold.ttf" as="font" type="font/ttf" crossorigin />
+
+		{/* Antes de pintar, o el tema guardado parpadea en claro al entrar. */}
+		<script is:inline>
+			(() => {
+				const guardado = localStorage.getItem("tema");
+				if (guardado === "claro" || guardado === "oscuro") {
+					document.documentElement.dataset.tema = guardado;
+				}
+			})();
+		</script>
 	</head>
 	<body>
 		<slot />
+
+		<script>
+			const elementos = document.querySelectorAll(".revelar");
+
+			if ("IntersectionObserver" in window) {
+				const observador = new IntersectionObserver(
+					(entradas) => {
+						for (const entrada of entradas) {
+							if (!entrada.isIntersecting) continue;
+							entrada.target.classList.remove("oculto");
+							observador.unobserve(entrada.target);
+						}
+					},
+					{ rootMargin: "0px 0px -10% 0px" },
+				);
+
+				for (const el of elementos) {
+					el.classList.add("oculto");
+					observador.observe(el);
+				}
+			}
+		</script>
 	</body>
 </html>
 
 <style is:global>
 	@font-face {
-		font-family: 'Saint George';
-		src: url('/fonts/SaintGeorgeLowercaseStencil.woff2') format('woff2');
-
+		font-family: 'Space Grotesk';
+		src: url('/fonts/SpaceGrotesk-Medium.ttf') format('truetype');
+		font-weight: 500;
+		font-style: normal;
+		font-display: swap;
+	}
+	@font-face {
+		font-family: 'Space Grotesk';
+		src: url('/fonts/SpaceGrotesk-Bold.ttf') format('truetype');
+		font-weight: 700;
+		font-style: normal;
+		font-display: swap;
+	}
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-Regular.ttf') format('truetype');
 		font-weight: 400;
-		font-style: normal; 
-		font-display: block;
+		font-style: normal;
+		font-display: swap;
+	}
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-Medium.ttf') format('truetype');
+		font-weight: 500;
+		font-style: normal;
+		font-display: swap;
+	}
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-SemiBold.ttf') format('truetype');
+		font-weight: 600;
+		font-style: normal;
+		font-display: swap;
+	}
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-Bold.ttf') format('truetype');
+		font-weight: 700;
+		font-style: normal;
+		font-display: swap;
 	}
 
 	:root {
-		color-scheme: light light;
-		
-		/*Colors*/
-		--dark: #2C2C2C;
-		--white: #fffffe;
-		--beige: #f5f1ea;
-		--green: #00694D;
-		--light-green: #4eb184;
-
 		/*Fonts*/
-		--primary-font: 'Saint George', sans-serif;
-		--secondary-font: 'DM Sans Variable', sans-serif;
+		--primary-font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+		--secondary-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
 		/* font-synthesis: none;
 			text-rendering: optimizeLegibility;
@@ -47,14 +134,22 @@ import "@styles/globals.css";
 			-moz-osx-font-smoothing: grayscale; */
 	}
 
+	/* En @layer base a propósito: las utilidades de Tailwind v4 viven en
+	   @layer utilities, y una regla SIN capa le gana a cualquier regla con capa
+	   por mucha menos especificidad que tenga. Sin esta envoltura, el `* {
+	   margin: 0; padding: 0 }` de aquí abajo anula todos los mt-*, px-* y h-*
+	   de la página. Las reglas de dentro no se han tocado. */
+	@layer base {
 	* { margin: 0; padding: 0; }
 	*, *::before, *::after { box-sizing: border-box; }
-	html { font-size: 16px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--green) var(--beige);}
+	html { font-size: 16px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--color-primary) var(--color-background);}
 	body {
 		font-family: var(--secondary-font);
 		min-height: 100vh;
 		/* max-width: 1920px; */
 		margin: auto 0;
+		background-color: var(--color-background);
+		color: var(--color-foreground);
 	}
 
 	input, button, textarea, select { font: inherit; }
@@ -65,16 +160,9 @@ import "@styles/globals.css";
 	a { text-decoration: none; color: inherit; }
 	ul, ol { list-style: none; }
 	*::selection {
-        background-color: var(--green);
-        color: var(--beige);
+        background-color: var(--color-primary);
+        color: var(--color-on-primary);
     }
-
-	/* @media (prefers-color-scheme: light) {
-		:root {
-			--white: #2C2C2C;
-			--dark: #F5F1EA;
-		}
-	} */
 
 	@media (prefers-reduced-motion: reduce) {
 		* { 
@@ -84,5 +172,6 @@ import "@styles/globals.css";
 			scroll-behavior: auto !important;
 			transition: none; 
 		}
+	}
 	}
 </style>

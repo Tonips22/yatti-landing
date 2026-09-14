@@ -1,0 +1,52 @@
+---
+const CONTACTO = "yatti277@gmail.com";
+const ANIO = new Date().getFullYear();
+---
+
+<footer
+	class="transicion-tema border-[color:var(--color-hairline)] border-t bg-[color:var(--color-surface)]"
+>
+	<div
+		class="mx-auto flex max-w-4xl flex-col gap-8 px-5 py-12 sm:flex-row sm:items-start sm:justify-between"
+	>
+		<div>
+			<img
+				src="/marca/yatti-logo-gradient.png"
+				alt="Yatti!"
+				width="90"
+				height="26"
+				class="h-6 w-auto"
+			/>
+			<p class="mt-3 max-w-xs text-[color:var(--color-muted)] text-sm leading-relaxed">
+				Yatti no es una casa de apuestas. No hay dinero real, ni premios en
+				metálico, ni fichas que se compren: se juega por puntos y por el orgullo
+				de ser el oráculo del grupo.
+			</p>
+		</div>
+
+		<nav class="flex flex-col gap-2.5 text-sm">
+			<a
+				href="/privacidad"
+				class="text-[color:var(--color-secondary)] transition-colors hover:text-[color:var(--color-primary)]"
+			>
+				Privacidad y términos
+			</a>
+			<a
+				href="/eliminar-cuenta"
+				class="text-[color:var(--color-secondary)] transition-colors hover:text-[color:var(--color-primary)]"
+			>
+				Eliminar tu cuenta
+			</a>
+			<a
+				href={`mailto:${CONTACTO}`}
+				class="text-[color:var(--color-secondary)] transition-colors hover:text-[color:var(--color-primary)]"
+			>
+				{CONTACTO}
+			</a>
+		</nav>
+	</div>
+
+	<p class="pb-10 text-center text-[color:var(--color-muted)] text-xs">
+		© {ANIO} Yatti! · Hecho en España
+	</p>
+</footer>

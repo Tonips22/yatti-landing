@@ -1,0 +1,47 @@
+---
+interface Props {
+	tienda: "ios" | "android";
+	enlace: string | null;
+}
+
+const { tienda, enlace } = Astro.props;
+
+const ETIQUETAS = {
+	ios: { arriba: "Descárgala en el", abajo: "App Store" },
+	android: { arriba: "Disponible en", abajo: "Google Play" },
+} as const;
+
+const { arriba, abajo } = ETIQUETAS[tienda];
+const base =
+	"transicion-tema flex items-center gap-3 rounded-2xl px-5 py-3 text-left";
+---
+
+{
+	enlace ? (
+		<a
+			href={enlace}
+			target="_blank"
+			rel="noopener"
+			class={`${base} bg-[color:var(--color-foreground)] text-[color:var(--color-background)] transition-transform duration-200 hover:scale-105`}
+		>
+			<slot />
+			<span class="leading-tight">
+				<span class="block text-[11px] opacity-70">{arriba}</span>
+				<span class="block font-semibold text-lg">{abajo}</span>
+			</span>
+		</a>
+	) : (
+		<span
+			class={`${base} cursor-not-allowed border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)] text-[color:var(--color-muted)]`}
+			aria-disabled="true"
+		>
+			<slot />
+			<span class="leading-tight">
+				<span class="block text-[11px]">{abajo}</span>
+				<span class="block font-semibold text-lg text-[color:var(--color-secondary)]">
+					Próximamente
+				</span>
+			</span>
+		</span>
+	)
+}

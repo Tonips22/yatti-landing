@@ -1,1 +1,127 @@
 @import 'tailwindcss';
+
+/**
+ * Tokens de Yatti, copiados de `src/global.css` del repo de la app.
+ * Si cambias un valor aquí, cámbialo también allí: son dos copias sin nada
+ * que las sincronice.
+ *
+ * Claro y oscuro van en el mismo sitio con `light-dark()`, así que cada token
+ * se declara UNA vez. Quién decide cuál se usa es `color-scheme`, no un
+ * selector: ver el bloque de abajo. Eso también hace que el navegador tiña
+ * solo los scrollbars y los controles nativos.
+ *
+ * `static` es obligatorio: las páginas leen estos tokens con `var(--color-x)`
+ * dentro de estilos en línea, que el escáner de Tailwind no ve. Sin él,
+ * purgaría como no usado justo lo que sí se usa.
+ */
+@theme static {
+  /* Superficies */
+  --color-background: light-dark(#f4f4f6, #09090b);
+  --color-surface: light-dark(#fafafa, #111114);
+  --color-card: light-dark(#ffffff, #18181c);
+  --color-elevated: light-dark(#ffffff, #1f1f24);
+
+  /* Marca ─ el morado NO es el mismo en los dos temas: #864dbc sobre card
+   * oscura da 3.20:1 y no llega para texto. En oscuro sube al que en claro era
+   * el hover, y hover/active van al revés (a más claro, no a más oscuro). */
+  --color-primary: light-dark(#864dbc, #9b63d1);
+  --color-primary-hover: light-dark(#7440a6, #b17fe0);
+  --color-primary-active: light-dark(#613589, #864dbc);
+  --color-on-primary: #ffffff;
+
+  /* El cian vivo solo se puede en oscuro: sobre blanco daba 1.7:1. */
+  --color-accent: light-dark(#0097b8, #00d9ff);
+
+  /* Texto ─ ni negro ni blanco puros: sobre el fondo contrario vibran. */
+  --color-foreground: light-dark(#16161a, #f5f5f7);
+  --color-secondary: light-dark(#45454f, #b8b8c2);
+  --color-muted: light-dark(#6f6f7d, #7a7a85);
+
+  /* Estado */
+  --color-success: light-dark(#16a34a, #22c55e);
+  --color-warning: light-dark(#b45309, #f59e0b);
+  --color-danger: light-dark(#dc2626, #ef4444);
+
+  /* Estado suave ─ fondos de chip y de banner. Por debajo del ~18% se leen
+   * como pegatina pastel en vez de como marcador de estado. */
+  --color-primary-soft: light-dark(rgba(134, 77, 188, 0.18), rgba(155, 99, 209, 0.22));
+  --color-accent-soft: light-dark(rgba(0, 151, 184, 0.2), rgba(0, 217, 255, 0.18));
+  --color-success-soft: light-dark(rgba(22, 163, 74, 0.2), rgba(34, 197, 94, 0.2));
+  --color-warning-soft: light-dark(rgba(180, 83, 9, 0.2), rgba(245, 158, 11, 0.2));
+  --color-danger-soft: light-dark(rgba(220, 38, 38, 0.18), rgba(239, 68, 68, 0.22));
+
+  /* Cristal ─ se invierte entre temas: en claro el velo es blanco y el borde
+   * negro; en oscuro los dos son blancos. Un borde negro sobre fondo oscuro
+   * no dibuja nada. */
+  --color-glass: light-dark(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.07));
+  --color-glass-strong: light-dark(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.12));
+  --color-glass-border: light-dark(rgba(22, 22, 26, 0.1), rgba(255, 255, 255, 0.14));
+  --color-hairline: light-dark(rgba(22, 22, 26, 0.07), rgba(255, 255, 255, 0.09));
+  --color-scrim: light-dark(rgba(22, 22, 26, 0.45), rgba(0, 0, 0, 0.6));
+
+  /* Escala de probabilidad ─ el color de un pronóstico según su valor.
+   * En claro están oscurecidos para pasar 3:1 sobre blanco; el tramo 50-69 es
+   * ámbar dorado porque un amarillo de verdad ahí da 1.9:1 y es invisible.
+   * En oscuro sí valen los tonos vivos, y el ámbar sí puede ser amarillo. */
+  --color-prob-muy-baja: light-dark(#dc2626, #f87171);
+  --color-prob-baja: light-dark(#ea580c, #fb923c);
+  --color-prob-media: light-dark(#d97706, #fbbf24);
+  --color-prob-alta: light-dark(#16a34a, #4ade80);
+  --color-prob-total: light-dark(#2563eb, #60a5fa);
+
+  /* Medallas ─ en oscuro son los metales de verdad; en claro esos mismos dan
+   * 1.8-2.1:1 y hay que usar variantes apagadas. */
+  --color-oro: light-dark(#b8860b, #d4af37);
+  --color-plata: light-dark(#78808f, #c0c0c0);
+  --color-bronce: light-dark(#b87333, #cd7f32);
+
+  /* Tipografía ─ Space Grotesk solo para la marca y el título de cada
+   * pantalla; Inter para todo lo demás. Las @font-face están en Layout.astro. */
+  --font-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/**
+ * El interruptor del tema.
+ *
+ * Sin `data-tema` manda el sistema. El botón de la cabecera escribe el
+ * atributo en <html> y con eso basta: al cambiar `color-scheme` cambian de
+ * golpe todos los `light-dark()` de arriba.
+ */
+:root {
+  color-scheme: light dark;
+}
+:root[data-tema='claro'] {
+  color-scheme: light;
+}
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+}
+
+/* Para lo que cambia de color al cambiar de tema y no debe dar un corte seco. */
+.transicion-tema {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/**
+ * Aparición al entrar en pantalla.
+ *
+ * Quien esconde es `.oculto`, y esa clase la pone el script de Layout JUSTO
+ * antes de observar el elemento. Al revés (esconder desde CSS y destapar con
+ * JS) cualquier fallo del script deja la página entera en blanco, y una
+ * animación decorativa no puede poder hacer eso.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .revelar {
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s ease-out;
+  }
+  .revelar.oculto {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
