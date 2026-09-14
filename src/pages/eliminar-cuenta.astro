@@ -1,6 +1,5 @@
 ---
-import Cabecera from "@/components/Cabecera.astro";
-import PieDePagina from "@/components/PieDePagina.astro";
+import Footer from "@/components/Footer.astro";
 import Layout from "@/layouts/Layout.astro";
 
 /**
@@ -51,9 +50,7 @@ const SE_CONSERVA = [
   titulo="Eliminar tu cuenta · Yatti"
   descripcion="Cómo eliminar tu cuenta de Yatti y los datos asociados: pasos, qué se borra, qué se conserva y durante cuánto tiempo."
 >
-  <Cabecera />
-
-  <article class="mx-auto max-w-2xl px-5 pt-32 pb-16 sm:pt-40 sm:pb-24">
+  <article class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
     <a
       href="/"
       class="mb-8 inline-flex items-center gap-2 text-[color:var(--color-muted)] text-sm transition-colors hover:text-[color:var(--color-primary)]"
@@ -321,5 +318,5 @@ const SE_CONSERVA = [
     </p>
   </article>
 
-  <PieDePagina />
+  <Footer />
 </Layout>
