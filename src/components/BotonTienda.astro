@@ -27,7 +27,7 @@ const { arriba, abajo, icono } = TIENDAS[tienda];
 /* Ancho FIJO (`w-56`), no el que pida el texto: «Descárgala en el / App Store»
    es más corto que «Google Play / Próximamente» y el de iOS salía más pequeño.
    Con el mismo ancho los dos botones se leen como pareja, en fila o apilados. */
-const base = "transicion-tema flex w-56 items-center gap-3 rounded-2xl px-5 py-3 text-left";
+const base = "flex w-56 items-center gap-3 rounded-2xl px-5 py-3 text-left";
 ---
 
 {
@@ -36,7 +36,7 @@ const base = "transicion-tema flex w-56 items-center gap-3 rounded-2xl px-5 py-3
 			href={enlace}
 			target="_blank"
 			rel="noopener"
-			class={`${base} bg-foreground text-background transition-transform duration-200 hover:scale-105`}
+			class={`${base} boton-tienda bg-foreground text-background`}
 		>
 			<svg class="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 				<path d={icono} />
@@ -48,7 +48,7 @@ const base = "transicion-tema flex w-56 items-center gap-3 rounded-2xl px-5 py-3
 		</a>
 	) : (
 		<span
-			class={`${base} cursor-not-allowed border border-glass-border bg-card text-muted`}
+			class={`${base} transicion-tema cursor-not-allowed border border-glass-border bg-card text-muted`}
 			aria-disabled="true"
 		>
 			<svg class="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -61,3 +61,48 @@ const base = "transicion-tema flex w-56 items-center gap-3 rounded-2xl px-5 py-3
 		</span>
 	)
 }
+
+<style>
+	/*
+	 * El hover del botón activo.
+	 *
+	 * Antes era `hover:scale-105` de Tailwind y NO se notaba: `.transicion-tema`
+	 * (globals.css) es CSS sin capa, que gana a las utilidades de Tailwind, y su
+	 * `transition` solo lleva colores. El escalado se aplicaba de golpe, sin
+	 * animar. Esta clase sustituye a `.transicion-tema` en el botón y lleva las
+	 * dos cosas: los colores (cambio de tema) y el movimiento.
+	 */
+	.boton-tienda {
+		transition:
+			background-color 0.25s ease,
+			border-color 0.25s ease,
+			color 0.25s ease,
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	/* Sube un poco, crece un poco y gana sombra: se lee como "esto se pulsa". El
+	   teclado recibe lo mismo, más el contorno de foco. */
+	.boton-tienda:hover,
+	.boton-tienda:focus-visible {
+		transform: translateY(-2px) scale(1.03);
+		box-shadow: 0 12px 28px -10px color-mix(in srgb, var(--color-primary) 55%, transparent);
+	}
+
+	.boton-tienda:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 3px;
+	}
+
+	.boton-tienda:active {
+		transform: translateY(0) scale(0.98);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.boton-tienda:hover,
+		.boton-tienda:focus-visible,
+		.boton-tienda:active {
+			transform: none;
+		}
+	}
+</style>
