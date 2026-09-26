@@ -15,11 +15,16 @@ import Layout from "@/layouts/Layout.astro";
  * detrás del código es peor que no tenerla, porque deja de ser cierta.
  *
  * ⚠️ Redactado a partir del código, NO revisado por un abogado.
+ *
+ * Sincronizada con la app el 2026-09-26: el texto de cada punto es LITERALMENTE
+ * el de `terms.tsx`. Lo único propio de la web son las entradillas (`intro`)
+ * de algunas secciones. Para actualizar: copiar el array de la app y volver a
+ * poner las entradillas.
  */
 
 const RESPONSABLE = "Antonio García Torres";
 const CONTACTO = "yatti277@gmail.com";
-const ACTUALIZADO = "13 de septiembre de 2026";
+const ACTUALIZADO = "26 de septiembre de 2026";
 const EDAD_MINIMA = 16;
 
 type Seccion = { titulo: string; intro?: string; puntos: string[] };
@@ -31,11 +36,12 @@ const SECCIONES: Seccion[] = [
       "Lo importante, en cuatro líneas. Debajo está el detalle, pero esto ya es cierto por sí solo.",
     puntos: [
       "Yatti es un juego de predicciones entre amigos. Se compite por posición en una clasificación: nunca hay dinero de por medio, ni premios en metálico, ni apuestas.",
-      "Lo que escribes lo ven los miembros de tu liga, nadie más. No hay predicciones públicas ni buscador de personas.",
+      "Lo que escribes lo ven los miembros de tu liga, nadie más. No hay predicciones públicas ni buscador de personas. La única forma de que algo salga de la liga es que un miembro comparta el resultado de una predicción como imagen (ver «Tu responsabilidad sobre lo que escribes»).",
       "Recogemos lo mínimo para que el juego funcione, más datos de uso sin contenido para saber si la app se entiende. Nunca vendemos datos ni hacemos publicidad con ellos.",
       "Puedes borrar tu cuenta entera desde tu perfil, sin pedir permiso a nadie y sin escribir a ningún sitio.",
     ],
   },
+
   {
     titulo: "Quién puede usar Yatti",
     puntos: [
@@ -44,18 +50,22 @@ const SECCIONES: Seccion[] = [
       "Si detectamos una cuenta de alguien por debajo de la edad mínima, se elimina junto con sus datos.",
     ],
   },
+
   {
     titulo: "Tu responsabilidad sobre lo que escribes",
     intro:
       "Las predicciones son texto libre que escribes tú. Yatti no las revisa antes de publicarse, así que la responsabilidad de su contenido es de quien las crea.",
     puntos: [
+      "Lo que subes sigue siendo tuyo. Al publicarlo nos das permiso para alojarlo y mostrarlo dentro de Yatti a los miembros de tus ligas, con el único fin de que la app funcione. No lo usamos para nada más, no lo cedemos a nadie, y ese permiso se acaba cuando borras el contenido o tu cuenta.",
       "Eres el único responsable de las predicciones que creas y de los motivos con los que disputas un resultado.",
       "No publicarás contenido que acose, amenace, humille o difame a nadie.",
       "No publicarás datos sensibles de otras personas —salud, orientación sexual, ideología, religión, origen étnico, vida sexual— sin su consentimiento explícito.",
       "No usarás Yatti para organizar apuestas con dinero real. El juego es por puntos y posición; meter dinero por fuera va contra estos términos.",
+      "Cuando una predicción está resuelta o anulada puedes compartir su resultado como imagen: el enunciado, el resultado y el porcentaje, el nombre y la foto de cada miembro que pronosticó. La imagen se crea en tu móvil y la envías tú a quien elijas; a nosotros no nos llega. Al compartirla, sacas de la liga datos de otras personas: hazlo solo si crees que les parecería bien, y nunca con predicciones sobre temas sensibles.",
       "Yatti puede retirar contenido y cerrar cuentas que incumplan estas normas.",
     ],
   },
+
   {
     titulo: "Predicciones sobre otras personas",
     intro:
@@ -64,10 +74,13 @@ const SECCIONES: Seccion[] = [
       "Antes de escribir sobre alguien, pregúntate si te parecería bien que lo leyera. En una liga privada de amigos, casi siempre acaba leyéndose.",
       `Si una persona pide que se retire una predicción sobre ella, se retira. No hace falta que esté registrada ni que explique por qué: basta con escribir a ${CONTACTO}.`,
       "Cualquier miembro de la liga puede reportar una predicción. El aviso le llega al administrador de la liga, que decide.",
+      "Puedes bloquear a cualquier persona sin pedirle permiso a nadie. Quien está bloqueado deja de ver tu nombre y tu foto, no puede ponerte como sujeto de sus predicciones, no te manda avisos y no puede meterte en ligas nuevas; lo que escriba te aparece plegado. No se le avisa, y puedes deshacerlo cuando quieras desde tu perfil.",
+      "Un administrador puede expulsar de la liga a quien incumpla estas normas. Quien es expulsado deja de ver la liga y no puede volver a entrar con un enlace de invitación.",
       "El autor de una predicción, o un administrador de la liga, pueden retirarla en cualquier momento. Al retirarla deja de verse para todos.",
       "Etiquetar a alguien como sujeto de una predicción solo se puede hacer con miembros de tu liga, y es solo una etiqueta: no cambia quién puede leerla.",
     ],
   },
+
   {
     titulo: "Cómo funciona el juego",
     puntos: [
@@ -78,20 +91,24 @@ const SECCIONES: Seccion[] = [
       "Puedes salir de una liga cuando quieras. Tus predicciones y pronósticos se quedan, porque forman parte de la partida del grupo.",
     ],
   },
+
   {
     titulo: "Qué datos recogemos y para qué",
     intro:
-      "Solo lo que la app necesita para funcionar, más datos de uso para entender si se entiende. Cada punto es una tabla real de la base de datos.",
+      "Solo lo que la app necesita para funcionar, más datos de uso para entender si se entiende. Cada punto describe algo que la app hace de verdad.",
     puntos: [
       "De tu cuenta: tu email y tu contraseña cifrada; o tu identificador de Apple o de Google si entras con ellos. Sirve para dejarte entrar y para recuperar el acceso.",
-      "De tu perfil: el nombre con el que te ven en las ligas y tu foto, si la pones. Lo ven los miembros de las ligas que compartes.",
+      "De tu perfil: el nombre con el que te ven en las ligas, tu foto si la pones y, si tienes Yatti! Premium, el marco de avatar que elijas. Lo ven los miembros de las ligas que compartes.",
       "Del juego: tus ligas, las predicciones que escribes, el porcentaje que asignas a cada una, los resultados propuestos, las disputas con su motivo y los votos. Es el contenido del juego; sin ello no hay juego.",
+      "Las estadísticas (clasificación, comparador, tu calibración, tu mejor y tu peor predicción…) se calculan en tu móvil a partir de esos mismos datos del juego. No recogen nada nuevo, y solo comparan a miembros de una misma liga.",
       "De las notificaciones: un identificador de tu dispositivo (token de push) para poder avisarte. Se borra al cerrar sesión o al borrar la cuenta.",
-      "De uso de la app (PostHog): qué pasos das —te registras, creas una liga, pronosticas, miras la clasificación— y datos de forma, como el modo de resolución elegido o si rellenaste el criterio. Nunca el contenido: ni enunciados, ni nombres de liga, ni nombres de personas, ni el porcentaje que pronosticaste.",
+      "De uso de la app (PostHog): qué pasos das —te registras, creas una liga, pronosticas, miras la clasificación, usas el comparador, compartes un resultado— y datos de forma, como el modo de resolución elegido o si rellenaste el criterio. Nunca el contenido: ni enunciados, ni nombres de liga, ni nombres de personas, ni el porcentaje que pronosticaste, ni la imagen que compartes.",
       "De errores (Sentry): cuando algo falla, el fallo técnico y en qué pantalla ocurrió, para poder arreglarlo. Sin grabación de pantalla y sin datos personales adjuntos.",
+      "De la compra de Yatti! Premium (RevenueCat): si has comprado o no, en qué tienda y cuándo, asociado a un identificador de tu cuenta. NUNCA datos de pago: la tarjeta la ve tu tienda, no nosotros ni RevenueCat.",
       "Lo que NO recogemos: ubicación, agenda de contactos, publicidad, seguimiento entre apps ni grabaciones de tu pantalla. Y nunca vendemos datos a nadie.",
     ],
   },
+
   {
     titulo: "Con quién se comparten",
     intro:
@@ -102,8 +119,10 @@ const SECCIONES: Seccion[] = [
       "Sentry — registro de errores. Servidores en la Unión Europea (Fráncfort).",
       "Expo — servicio de envío de notificaciones. Para entregarte un aviso, el token de tu dispositivo y el texto del aviso pasan por sus servidores, en Estados Unidos, y de ahí a Apple o a Google.",
       "Apple y Google — entregan la notificación a tu móvil, y verifican tu identidad si entras con su cuenta.",
+      "RevenueCat — comprueba con Apple y con Google si tu compra de Yatti! Premium es válida y sigue activa. Recibe un identificador de tu cuenta y el detalle de la compra; nunca tu nombre, tu email ni datos bancarios. Servidores en Estados Unidos.",
     ],
   },
+
   {
     titulo: "Tus fotos son públicas por su enlace",
     intro:
@@ -115,6 +134,7 @@ const SECCIONES: Seccion[] = [
       "Al borrar tu cuenta, o al quitar la foto desde tu perfil, el fichero se borra del almacenamiento.",
     ],
   },
+
   {
     titulo: "Cuánto tiempo se guardan",
     puntos: [
@@ -124,9 +144,11 @@ const SECCIONES: Seccion[] = [
       "Las predicciones que escribiste en ligas de otras personas pueden permanecer, porque forman parte de la partida de ese grupo. Si quieres que se retiren, escríbenos.",
     ],
   },
+
   {
     titulo: "Tus derechos",
-    intro: `El Reglamento General de Protección de Datos te da estos derechos, y se ejercen escribiendo a ${CONTACTO}. Respondemos en un plazo máximo de un mes.`,
+    intro:
+      `El Reglamento General de Protección de Datos te da estos derechos, y se ejercen escribiendo a ${CONTACTO}. Respondemos en un plazo máximo de un mes.`,
     puntos: [
       "Acceder a los datos que tenemos sobre ti y pedir una copia.",
       "Corregir los que sean inexactos. El nombre y la foto los puedes cambiar tú desde tu perfil.",
@@ -136,18 +158,22 @@ const SECCIONES: Seccion[] = [
       `Responsable del tratamiento: ${RESPONSABLE}. Contacto: ${CONTACTO}.`,
     ],
   },
+
   {
-    titulo: "Si en el futuro hay pagos",
+    titulo: "Yatti! Premium",
     intro:
-      "Hoy Yatti es gratis y no hay ninguna compra dentro de la app. Cuando la haya, funcionará así.",
+      "Yatti! Premium es un pago único: se paga una vez y es para siempre. NO es una suscripción, no se renueva y no hay nada que cancelar.",
     puntos: [
-      "Las suscripciones se cobran a través de App Store o Google Play. El pago lo gestionan ellos: nosotros no vemos ni guardamos tu tarjeta.",
-      "Se usará RevenueCat para saber si tu suscripción está activa. Recibe un identificador de tu cuenta, nunca datos bancarios.",
-      "La parte gratuita seguirá siendo suficiente para jugar: predicciones, ligas, clasificación y estadísticas básicas.",
-      "Cancelar se hace desde los ajustes de tu tienda, no desde aquí, y la renovación se detiene al final del periodo ya pagado.",
-      "En ningún caso se podrá pagar para ganar posiciones ni para obtener premios en metálico.",
+      "Lo cobra App Store o Google Play, nunca nosotros. El pago lo gestionan ellos: no vemos ni guardamos tu tarjeta.",
+      "Incluye: crear ligas sin límite, comparar entre sí a cualquier pareja de tu liga, ordenar la clasificación por aciertos o valentía y filtrarla por sobre quién iba la predicción, tu curva de calibración y los marcos de avatar.",
+      "La parte gratuita sigue siendo la experiencia completa: predecir, pronosticar, resolver, disputar, la clasificación entera, compararte con cualquiera de tu liga, tus estadísticas personales y compartir resultados. El único límite del plan gratis es que puedes CREAR hasta 5 ligas; estar en las que quieras no tiene tope.",
+      "Va con tu cuenta de Yatti, no con el móvil: si lo compras en iPhone y luego entras desde Android con la misma cuenta, no pagas otra vez. Y si cambias de móvil o reinstalas, se recupera con «Restaurar compras» usando la misma cuenta de la tienda.",
+      "Usamos RevenueCat para comprobar con Apple y con Google que la compra es válida. Recibe un identificador de tu cuenta y el detalle de la compra; nunca datos bancarios.",
+      "Los reembolsos los gestiona tu tienda, no nosotros: se piden a Apple o a Google. Si te devuelven el dinero, el Premium deja de estar activo.",
+      "En ningún caso se puede pagar para ganar posiciones, para puntuar más ni para obtener premios en metálico. El dinero no toca la clasificación.",
     ],
   },
+
   {
     titulo: "Cambios y contacto",
     puntos: [

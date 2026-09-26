@@ -24,7 +24,10 @@ const TIENDAS = {
 } as const;
 
 const { arriba, abajo, icono } = TIENDAS[tienda];
-const base = "transicion-tema flex items-center gap-3 rounded-2xl px-5 py-3 text-left";
+/* Ancho FIJO (`w-56`), no el que pida el texto: «Descárgala en el / App Store»
+   es más corto que «Google Play / Próximamente» y el de iOS salía más pequeño.
+   Con el mismo ancho los dos botones se leen como pareja, en fila o apilados. */
+const base = "transicion-tema flex w-56 items-center gap-3 rounded-2xl px-5 py-3 text-left";
 ---
 
 {
