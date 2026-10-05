@@ -1,0 +1,139 @@
+---
+import BotonTienda from "@/components/BotonTienda.astro";
+import Footer from "@/components/Footer.astro";
+import Layout from "@/layouts/Layout.astro";
+
+/**
+ * La puerta de entrada de una invitación: `https://www.yatti.app/join?codigo=…`
+ *
+ * Es la URL que comparte la app desde la 1.1.1 (repo `yatti`, `invitar.tsx`).
+ * Quien la abre puede estar en tres situaciones, y la página tiene que servir
+ * para las tres:
+ *
+ *  1. TIENE la app y los App Links funcionan → el sistema abre la app y esta
+ *     página ni se llega a ver.
+ *  2. TIENE la app pero el enlace abrió el navegador (el fichero de
+ *     verificación aún no está, o el navegador de dentro de Instagram no deja
+ *     saltar a apps) → botón «Abrir en la app», con el esquema `yatti://`.
+ *  3. NO tiene la app → el código en grande para escribirlo después, y los
+ *     botones de las tiendas. Es el caso más importante: aquí se gana o se
+ *     pierde a la persona a la que han invitado.
+ *
+ * ── Por qué el código se lee en el navegador ─────────────────────────
+ * La web es estática: `?codigo=` no existe al construirla, solo cuando alguien
+ * la abre. Lo pinta el script de abajo, y SIEMPRE con `textContent`, nunca con
+ * `innerHTML`: el parámetro lo escribe quien manda el enlace, y no se puede
+ * fiar uno de él.
+ *
+ * Mismas reglas de formato que la app (`lib/invitacion.ts`): el código corto
+ * (6 caracteres sin 0/O ni 1/I/L) se enseña partido, `K7M·Q3X`; un código
+ * largo de antes de la 1.1.1, tal cual (ese distingue mayúsculas).
+ */
+---
+
+<Layout
+  titulo="¡Te han invitado a una liga de Yatti!"
+  descripcion="Únete a la liga de tus amigos: predecid cosas de vuestras vidas y ved quién acierta más. Sin dinero, solo por el orgullo."
+>
+  <main class="mx-auto flex min-h-[80vh] max-w-md flex-col items-center gap-8 px-5 py-14 text-center">
+    <a href="/" aria-label="Yatti!, página principal">
+      <img src="/marca/yatti-logo-gradient.png" alt="Yatti!" class="h-12 w-auto" />
+    </a>
+
+    <header class="flex flex-col gap-3">
+      <h1 class="font-heading text-3xl font-bold text-[color:var(--color-foreground)]">
+        Te han invitado a una liga
+      </h1>
+      <p class="text-[color:var(--color-secondary)]">
+        En Yatti! los amigos predicen cosas de sus vidas, se ponen un porcentaje y
+        ven quién acierta más.
+      </p>
+    </header>
+
+    <!-- Con código: se enseña y se puede copiar. Sin él (enlace roto o
+         recortado), el bloque de abajo explica qué pedir. -->
+    <section id="con-codigo" hidden class="flex w-full flex-col items-center gap-3">
+      <p class="text-sm text-[color:var(--color-muted)]">Tu código de invitación</p>
+      <p
+        id="codigo"
+        class="font-heading text-4xl font-bold tracking-[0.12em] text-[color:var(--color-primary)] tabular-nums"
+      ></p>
+      <button
+        id="copiar"
+        type="button"
+        class="rounded-full border border-[color:var(--color-glass-border)] bg-[color:var(--color-card)] px-5 py-2 text-sm font-semibold text-[color:var(--color-foreground)] transition-colors hover:border-[color:var(--color-primary)]"
+      >
+        Copiar código
+      </button>
+    </section>
+
+    <p id="sin-codigo" hidden class="text-[color:var(--color-secondary)]">
+      Este enlace no trae código. Pide a quien te invitó que te lo vuelva a mandar.
+    </p>
+
+    <section class="flex w-full flex-col gap-4 rounded-3xl border border-[color:var(--color-hairline)] bg-[color:var(--color-card)] p-6 text-left">
+      <h2 class="font-heading text-lg font-bold text-[color:var(--color-foreground)]">
+        Cómo entrar
+      </h2>
+      <ol class="flex list-decimal flex-col gap-2 pl-5 text-[color:var(--color-secondary)]">
+        <li>Instala Yatti! (es gratis).</li>
+        <li>Abre la app y toca <strong>«Tengo una invitación»</strong>.</li>
+        <li>Escribe el código o pégalo.</li>
+      </ol>
+    </section>
+
+    <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <BotonTienda tienda="ios" />
+      <BotonTienda tienda="android" />
+    </div>
+
+    <!-- Para quien ya tiene la app pero el enlace le ha abierto el navegador. -->
+    <a
+      id="abrir-app"
+      hidden
+      class="text-sm font-semibold text-[color:var(--color-primary)] underline underline-offset-4"
+    >
+      ¿Ya tienes Yatti!? Ábrela con esta invitación
+    </a>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  /** El alfabeto del código corto: igual que `generar_codigo_invitacion()`. */
+  const CORTO = /^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/;
+
+  const crudo = new URLSearchParams(location.search).get("codigo") ?? "";
+  // Solo lo que puede haber en un código, venga de donde venga el enlace.
+  const limpio = crudo.trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
+  const corto = limpio.toUpperCase();
+  const codigo = CORTO.test(corto) ? corto : limpio.length === 12 ? limpio : "";
+
+  if (codigo) {
+    const visible = CORTO.test(codigo)
+      ? `${codigo.slice(0, 3)}·${codigo.slice(3)}`
+      : codigo;
+    document.getElementById("codigo")!.textContent = visible;
+    document.getElementById("con-codigo")!.hidden = false;
+
+    const abrir = document.getElementById("abrir-app") as HTMLAnchorElement;
+    abrir.href = `yatti://join?codigo=${encodeURIComponent(codigo)}`;
+    abrir.hidden = false;
+
+    const copiar = document.getElementById("copiar") as HTMLButtonElement;
+    copiar.addEventListener("click", async () => {
+      try {
+        // Pelado, sin el `·`: la app lo acepta de las dos formas, pero fuera
+        // de Yatti el punto solo confunde.
+        await navigator.clipboard.writeText(codigo);
+        copiar.textContent = "¡Copiado!";
+        setTimeout(() => (copiar.textContent = "Copiar código"), 2000);
+      } catch {
+        copiar.textContent = "Mantén pulsado el código para copiarlo";
+      }
+    });
+  } else {
+    document.getElementById("sin-codigo")!.hidden = false;
+  }
+</script>
