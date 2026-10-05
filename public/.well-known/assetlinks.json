@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tonips22.yatti",
+      "sha256_cert_fingerprints": [
+        "7C:B4:E9:C6:47:7B:90:2B:B2:A4:2F:62:1A:EC:7C:06:C2:9B:9E:9E:C5:05:11:F4:EA:F8:90:4C:D0:BF:86:B8",
+        "76:C3:3D:0B:0B:0F:1F:34:0F:04:0E:57:86:0E:00:E0:F9:F0:BF:0E:E8:54:25:A2:C6:9E:1F:E9:8C:7C:43:1D"
+      ]
+    }
+  }
+]
