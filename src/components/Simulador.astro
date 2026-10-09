@@ -9,7 +9,8 @@
  * `lib/prediccion.ts` (clásicas) y `lib/multiple.ts` («Múltiple»).
  *
  * Desde la `1.2.0` no hay modos de liga: el árbitro es un interruptor de cada
- * predicción y el resultado «cuenta al instante, con 48 h para disputarlo».
+ * predicción y el resultado cuenta al instante. La ventana de 48 h para
+ * disputar se deja fuera a propósito: alargaba el simulador sin vender nada.
  */
 
 const PASOS = [
@@ -21,9 +22,8 @@ const PASOS = [
 ];
 
 /**
- * La liga del simulador: tú y cuatro más. Cinco miembros es lo que hace que
- * el 2/3 de una disputa sea «4 de 5». El orden es la antigüedad en la liga,
- * que es el desempate de la elección de árbitro.
+ * La liga del simulador: tú y cuatro más. El orden es la antigüedad en la
+ * liga, que es el desempate de la elección de árbitro.
  */
 const LIGA = ["Marta", "Dani", "Tú", "Laura", "Iván"];
 const SUJETOS = ["Nadie en concreto", ...LIGA];
@@ -527,11 +527,6 @@ const PLACEHOLDER = {
 
 						<ul id="sim-ganadoras" data-solo="multiple" hidden class="mt-4 grid gap-2"></ul>
 
-						<p class="mt-4 text-center text-muted text-[13px] leading-relaxed">
-							Contará al momento. El grupo tendrá 48 h para disputarlo si no está
-							de acuerdo.
-						</p>
-
 						<button
 							type="button"
 							id="sim-anular"
@@ -543,69 +538,6 @@ const PLACEHOLDER = {
 						<p class="mt-1 text-center text-muted text-xs">
 							Anula si la pregunta resultó ambigua o ya no aplica.
 						</p>
-					</div>
-
-					<!-- Las 48 h para disputar -->
-					<div id="sim-disputable" class="mt-4">
-						<div class="rounded-2xl border border-glass-border bg-card p-5">
-							<p
-								class="rounded-xl bg-warning-soft px-4 py-2.5 text-center font-medium text-sm text-warning"
-							>
-								⏱ <span id="sim-resolvio"></span> · queda 1 d 23 h para disputarlo
-							</p>
-
-							<button
-								type="button"
-								id="sim-disputar"
-								class="mt-4 w-full rounded-xl px-4 py-2.5 font-medium text-secondary text-sm transition-colors hover:bg-hairline"
-							>
-								No estoy de acuerdo
-							</button>
-
-							<div id="sim-disputa" hidden class="mt-4">
-								<label for="sim-motivo" class="mb-2 block font-semibold text-foreground text-sm">
-									¿Por qué la disputas?
-								</label>
-								<textarea
-									id="sim-motivo"
-									rows="2"
-									maxlength="500"
-									placeholder="Lo verá todo el grupo. Explica qué pasó de verdad."
-									class="w-full resize-none rounded-xl border border-glass-border bg-surface px-3 py-2 text-foreground text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
-								></textarea>
-								<button
-									type="button"
-									id="sim-enviar-disputa"
-									class="mt-2 w-full rounded-xl bg-danger px-4 py-2.5 font-semibold text-on-primary text-sm transition-opacity disabled:opacity-40"
-									disabled
-								>
-									Disputar
-								</button>
-								<p class="mt-2 text-center text-muted text-xs leading-5">
-									Mientras el grupo vota, la predicción sale de la clasificación.
-								</p>
-							</div>
-
-							<div id="sim-votacion" hidden class="mt-4">
-								<div class="rounded-2xl bg-danger-soft px-4 py-3">
-									<p class="font-semibold text-danger text-sm">Tú lo disputas</p>
-									<p id="sim-motivo-eco" class="mt-1 text-secondary text-sm leading-5"></p>
-								</div>
-
-								<p id="sim-pregunta-voto" class="mt-4 text-center font-semibold text-foreground"></p>
-								<div id="sim-votar" class="mt-3 grid gap-2"></div>
-
-								<div class="mt-4 border-hairline border-t pt-4">
-									<p id="sim-umbral" class="text-muted text-xs"></p>
-									<ul id="sim-recuento" class="mt-3 grid gap-3"></ul>
-									<p id="sim-desenlace" class="mt-3 text-muted text-xs leading-5"></p>
-								</div>
-							</div>
-
-							<p class="mt-3 text-center text-muted text-xs">
-								Si nadie lo disputa, queda firme.
-							</p>
-						</div>
 					</div>
 				</div>
 
@@ -930,7 +862,6 @@ const PLACEHOLDER = {
 			resultado: true,
 			ganadora: "Marta",
 			anulada: false,
-			miVoto: null as "si" | "no" | "ambigua" | null,
 		};
 
 		const multiple = () => estado.tipo === "multiple";
@@ -958,7 +889,6 @@ const PLACEHOLDER = {
 			}
 			return mejor;
 		}
-		const quienResuelve = () => (estado.conArbitro ? arbitro() : "Tú");
 
 		/* ── Animaciones base ──────────────────────────────────── */
 
@@ -983,6 +913,57 @@ const PLACEHOLDER = {
 		}
 
 		let transicionando = false;
+
+		/** Lo que mide el escenario ahora mismo, aunque esté a mitad de animación. */
+		const alturaVisible = () => escenario.getBoundingClientRect().height;
+
+		let animacionAltura = 0;
+
+		/**
+		 * Lleva el escenario de `antes` a lo que pide su contenido, con muelle en
+		 * vez de salto. El turno evita que una animación vieja, al terminar,
+		 * suelte la altura en mitad de la nueva (cambiar de tipo dos veces seguidas).
+		 */
+		function animarAltura(antes: number) {
+			const borde = escenario.offsetHeight - escenario.clientHeight;
+			const despues = pista.offsetHeight + borde;
+			if (Math.abs(despues - antes) <= 4) {
+				escenario.style.height = "";
+				return;
+			}
+			const turno = ++animacionAltura;
+			escenario.style.height = antes + "px";
+			animate(
+				escenario,
+				{ height: [antes + "px", despues + "px"] },
+				MUELLE_SUAVE,
+			).finished.then(() => {
+				if (turno === animacionAltura) escenario.style.height = "";
+			});
+		}
+
+		/**
+		 * Cambia lo que se ve dentro del panel (Clásica ↔ Múltiple, el árbitro)
+		 * sin que la caja salte: la altura se anima y lo que aparece entra con
+		 * un fundido.
+		 */
+		function cambiarDentro(cambio: () => void) {
+			const antes = alturaVisible();
+			const visibles = new Set(qa<HTMLElement>("[data-solo]").filter((e) => !e.hidden));
+			escenario.style.height = antes + "px";
+			cambio();
+			const nuevos = qa<HTMLElement>("[data-solo]").filter(
+				(e) => !e.hidden && !visibles.has(e) && !e.closest(".panel[hidden]"),
+			);
+			animarAltura(antes);
+			if (nuevos.length) {
+				animate(
+					nuevos,
+					{ opacity: [0, 1], y: [8, 0] },
+					{ ...MUELLE, delay: stagger(0.03) },
+				);
+			}
+		}
 
 		/**
 		 * Borra los restos de una transición anterior. Sin esto, el panel
@@ -1021,7 +1002,7 @@ const PLACEHOLDER = {
 			entrante.style.opacity = "0";
 			for (const h of hijos) h.style.opacity = "0";
 
-			const alturaAntes = pista.offsetHeight;
+			const alturaAntes = alturaVisible();
 
 			await animate(saliente, { opacity: 0, y: -8 }, { duration: 0.14 })
 				.finished;
@@ -1033,17 +1014,7 @@ const PLACEHOLDER = {
 			   vacío, la altura calculada es la equivocada y de ahí el salto. */
 			preparar?.();
 
-			const alturaDespues = pista.offsetHeight;
-			if (Math.abs(alturaDespues - alturaAntes) > 4) {
-				escenario.style.height = alturaAntes + "px";
-				animate(
-					escenario,
-					{ height: [alturaAntes + "px", alturaDespues + "px"] },
-					MUELLE_SUAVE,
-				).finished.then(() => {
-					escenario.style.height = "";
-				});
-			}
+			animarAltura(alturaAntes);
 
 			await Promise.all([
 				animate(entrante, { opacity: [0, 1], y: [14, 0] }, MUELLE).finished,
@@ -1157,7 +1128,6 @@ const PLACEHOLDER = {
 		}
 
 		function elegirTipo(tipo: "binaria" | "multiple") {
-			if (tipo !== estado.tipo) reiniciarDisputa();
 			estado.tipo = tipo;
 			for (const b of qa<HTMLButtonElement>(".tipo")) {
 				const activo = b.dataset.tipo === tipo;
@@ -1171,7 +1141,8 @@ const PLACEHOLDER = {
 
 		for (const b of qa<HTMLButtonElement>(".tipo")) {
 			b.addEventListener("click", () => {
-				elegirTipo(b.dataset.tipo as "binaria" | "multiple");
+				if (b.dataset.tipo === estado.tipo) return;
+				cambiarDentro(() => elegirTipo(b.dataset.tipo as "binaria" | "multiple"));
 				animate(b, { scale: [1, 0.96, 1] }, { duration: 0.25 });
 			});
 		}
@@ -1249,7 +1220,7 @@ const PLACEHOLDER = {
 		interruptor.addEventListener("click", () => {
 			estado.conArbitro = !estado.conArbitro;
 			pintarInterruptor();
-			pintarVisibilidad();
+			cambiarDentro(pintarVisibilidad);
 		});
 
 		/* ── Paso 2 ────────────────────────────────────────────── */
@@ -1513,23 +1484,7 @@ const PLACEHOLDER = {
 
 		/* ── Paso 4 ────────────────────────────────────────────── */
 
-		const disputable = q<HTMLElement>("#sim-disputable");
-		const disputa = q<HTMLElement>("#sim-disputa");
-		const votacion = q<HTMLElement>("#sim-votacion");
-		const motivo = q<HTMLTextAreaElement>("#sim-motivo");
-		const enviarDisputa = q<HTMLButtonElement>("#sim-enviar-disputa");
-		const disputar = q<HTMLButtonElement>("#sim-disputar");
 		const anular = q<HTMLButtonElement>("#sim-anular");
-
-		/** Vuelve las 48 h a su estado inicial: aún sin disputar. */
-		function reiniciarDisputa() {
-			disputa.hidden = true;
-			votacion.hidden = true;
-			disputar.hidden = false;
-			motivo.value = "";
-			enviarDisputa.disabled = true;
-			estado.miVoto = null;
-		}
 
 		function pintarResolver() {
 			pintarResultado();
@@ -1539,13 +1494,6 @@ const PLACEHOLDER = {
 			anular.style.color = estado.anulada
 				? "var(--color-foreground)"
 				: "var(--color-secondary)";
-
-			/* Anulada no se puede disputar: no cuenta para nadie. */
-			disputable.hidden = estado.anulada;
-			const quien = quienResuelve();
-			q<HTMLElement>("#sim-resolvio").textContent =
-				quien === "Tú" ? "La resolviste tú" : `${quien} la resolvió`;
-			if (!votacion.hidden) pintarVotacion();
 		}
 
 		function pintarResultado() {
@@ -1564,7 +1512,6 @@ const PLACEHOLDER = {
 			b.addEventListener("click", () => {
 				estado.resultado = b.dataset.resultado === "si";
 				estado.anulada = false;
-				reiniciarDisputa();
 				animate(b, { scale: [1, 0.95, 1] }, { duration: 0.28 });
 				pintarResolver();
 			});
@@ -1593,7 +1540,6 @@ const PLACEHOLDER = {
 				b.addEventListener("click", () => {
 					estado.ganadora = b.dataset.ganadora!;
 					estado.anulada = false;
-					reiniciarDisputa();
 					pintarResolver();
 				});
 			}
@@ -1601,131 +1547,9 @@ const PLACEHOLDER = {
 
 		anular.addEventListener("click", () => {
 			estado.anulada = !estado.anulada;
-			reiniciarDisputa();
 			animate(anular, { scale: [1, 0.96, 1] }, { duration: 0.25 });
 			pintarResolver();
 		});
-
-		disputar.addEventListener("click", () => {
-			disputar.hidden = true;
-			disputa.hidden = false;
-			animate(disputa, { opacity: [0, 1], y: [10, 0] }, MUELLE);
-			motivo.focus();
-		});
-
-		/* Como la app: el motivo es obligatorio y de al menos 10 caracteres. */
-		motivo.addEventListener("input", () => {
-			enviarDisputa.disabled = motivo.value.trim().length < 10;
-		});
-
-		enviarDisputa.addEventListener("click", () => {
-			q<HTMLElement>("#sim-motivo-eco").textContent = motivo.value.trim();
-			disputa.hidden = true;
-			votacion.hidden = false;
-			animate(votacion, { opacity: [0, 1], y: [10, 0] }, MUELLE);
-			pintarVotacion(true);
-		});
-
-		/**
-		 * La votación de la disputa (`resolucion.tsx`). Los demás ya han votado:
-		 * dos apoyan lo resuelto, uno lo ve al revés y uno lo ve ambiguo. Falta
-		 * tu voto.
-		 */
-		function pintarVotacion(animar = false) {
-			const miembros = LIGA.length;
-			const umbral = Math.ceil(miembros * (2 / 3));
-			const ganadora = estado.ganadora;
-			/* En una Múltiple se vota sobre la opción elegida: «¿fue Marta?». */
-			const propuesta = multiple() ? true : estado.resultado;
-			const apoya = (v: "si" | "no" | "ambigua") =>
-				v !== "ambigua" && (v === "si") === propuesta;
-			const votosRivales = {
-				si: propuesta ? 2 : 1,
-				no: propuesta ? 1 : 2,
-				ambigua: 1,
-			};
-			const OPCIONES = [
-				{
-					voto: "si" as const,
-					etiqueta: multiple() ? `Sí, fue ${ganadora}` : "Sí ocurrió",
-					color: "var(--color-success)",
-				},
-				{
-					voto: "no" as const,
-					etiqueta: multiple() ? `No fue ${ganadora}` : "No ocurrió",
-					color: "var(--color-danger)",
-				},
-				{ voto: "ambigua" as const, etiqueta: "Es ambigua", color: "var(--color-muted)" },
-			];
-			const cuenta = (v: "si" | "no" | "ambigua") =>
-				votosRivales[v] + (estado.miVoto === v ? 1 : 0);
-
-			q<HTMLElement>("#sim-pregunta-voto").textContent = multiple()
-				? `¿Fue ${ganadora}?`
-				: "¿Ocurrió al final?";
-
-			const votar = q<HTMLElement>("#sim-votar");
-			votar.innerHTML = OPCIONES.map((o) => {
-				const elegido = estado.miVoto === o.voto;
-				return `
-					<button type="button" data-voto="${o.voto}"
-						class="flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
-						style="border-color:var(--color-${elegido ? "primary" : "hairline"});background:var(--color-${elegido ? "primary-soft" : "surface"})">
-						<span class="text-[15px]" style="color:var(--color-${elegido ? "foreground" : "secondary"});font-weight:${elegido ? 600 : 400}">${o.etiqueta}</span>
-						${elegido ? '<span style="color:var(--color-primary)">✓</span>' : ""}
-					</button>`;
-			}).join("");
-			for (const b of votar.querySelectorAll<HTMLButtonElement>("[data-voto]")) {
-				b.addEventListener("click", () => {
-					estado.miVoto = b.dataset.voto as "si" | "no" | "ambigua";
-					pintarVotacion();
-				});
-			}
-
-			q<HTMLElement>("#sim-umbral").textContent =
-				`Hacen falta ${umbral} de ${miembros} para ${multiple() ? "anularla" : "cambiar el resultado"}`;
-
-			/* Las tres posturas, y la que coincide con lo resuelto sin umbral:
-			   si no se alcanza ningún 2/3, lo resuelto queda firme igualmente. */
-			const recuento = q<HTMLElement>("#sim-recuento");
-			recuento.innerHTML = OPCIONES.map((o) => {
-				const n = cuenta(o.voto);
-				const sinUmbral = apoya(o.voto);
-				const referencia = sinUmbral ? miembros : umbral;
-				const faltan = Math.max(umbral - n, 0);
-				return `
-					<li>
-						<div class="flex items-baseline justify-between">
-							<span class="text-sm font-medium" style="color:var(--color-foreground)">${o.etiqueta}${estado.miVoto === o.voto ? '<span style="color:var(--color-muted);font-weight:400"> · tu voto</span>' : ""}</span>
-							<span class="font-bold text-sm tabular-nums" style="color:var(--color-foreground)">${sinUmbral ? n : `${n}/${umbral}`}</span>
-						</div>
-						<div class="mt-1.5 h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
-							<span class="barra block h-full rounded-full" style="width:${animar ? 0 : Math.min((n / referencia) * 100, 100)}%;background:${o.color}"></span>
-						</div>
-						<p class="mt-1 text-xs" style="color:var(--color-muted)">${sinUmbral ? "Es lo resuelto: no necesita umbral" : faltan === 0 ? "Ya hay suficientes" : `Faltan ${faltan}`}</p>
-					</li>`;
-			}).join("");
-			if (animar) {
-				llenar(
-					[...recuento.querySelectorAll<HTMLElement>(".barra")],
-					OPCIONES.map((o) =>
-						Math.min((cuenta(o.voto) / (apoya(o.voto) ? miembros : umbral)) * 100, 100),
-					),
-					0.1,
-				);
-			}
-
-			const contra = OPCIONES.find((o) => o.voto !== "ambigua" && !apoya(o.voto))!;
-			const tumbada = cuenta(contra.voto) >= umbral;
-			const ambigua = cuenta("ambigua") >= umbral;
-			q<HTMLElement>("#sim-desenlace").textContent =
-				"Quien no vota cuenta como que acepta lo que se resolvió." +
-				(multiple() ? " Si el grupo dice que no fue, la predicción se anula." : "") +
-				" " +
-				(tumbada || ambigua
-					? "Con estos votos, el grupo le daría la vuelta."
-					: "Con estos votos no se llega: lo resuelto queda firme. Una minoría interesada no descarrila nada.");
-		}
 
 		/* ── Paso 5 ────────────────────────────────────────────── */
 
@@ -1822,7 +1646,6 @@ const PLACEHOLDER = {
 			paso.addEventListener("click", () => irA(Number(paso.dataset.paso)));
 		}
 		siguiente.addEventListener("click", () => {
-			if (estado.paso === paneles.length) reiniciarDisputa();
 			irA(estado.paso === paneles.length ? 1 : estado.paso + 1);
 		});
 		atras.addEventListener("click", () => irA(estado.paso - 1));
