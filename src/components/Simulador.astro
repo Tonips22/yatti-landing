@@ -123,33 +123,42 @@ const PLACEHOLDER = {
 						Crea la predicción
 					</h3>
 					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
-						Dentro de una liga privada, con tus amigos y nadie más.{" "}
+						Dentro de una liga privada, con tus amigos y nadie más.
+					</p>
+
+					<div
+						data-escalonar
+						class="relative mt-6 flex rounded-2xl border border-glass-border bg-card p-1"
+						role="group"
+						aria-label="Tipo de predicción"
+					>
+						<span
+							id="sim-pildora"
+							class="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-primary-soft"
+							aria-hidden="true"></span>
+						<button
+							type="button"
+							class="tipo relative flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
+							data-tipo="binaria"
+							aria-pressed="true">Clásica</button
+						>
+						<button
+							type="button"
+							class="tipo relative flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
+							data-tipo="multiple"
+							aria-pressed="false">Múltiple</button
+						>
+					</div>
+
+					<!-- Lo que cambia con el tipo: se desliza entero, como un toggle -->
+					<div id="sim-crear-cuerpo">
+					<p data-escalonar class="mt-4 text-muted text-sm leading-relaxed">
 						<span data-solo="binaria">Una Clásica es de Sí o No.</span>
 						<span data-solo="multiple" hidden
 							>Una Múltiple va entre varias personas, y siempre lleva también
 							«Nadie / Otro».</span
 						>
 					</p>
-
-					<div
-						data-escalonar
-						class="mt-6 flex rounded-2xl border border-glass-border bg-card p-1"
-						role="group"
-						aria-label="Tipo de predicción"
-					>
-						<button
-							type="button"
-							class="tipo flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
-							data-tipo="binaria"
-							aria-pressed="true">Clásica</button
-						>
-						<button
-							type="button"
-							class="tipo flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
-							data-tipo="multiple"
-							aria-pressed="false">Múltiple</button
-						>
-					</div>
 
 					<div data-solo="binaria">
 						<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
@@ -262,6 +271,7 @@ const PLACEHOLDER = {
 								class="perilla absolute top-0.5 left-0.5 block h-6 w-6 rounded-full bg-white shadow"
 							></span>
 						</button>
+					</div>
 					</div>
 				</div>
 
@@ -1127,14 +1137,64 @@ const PLACEHOLDER = {
 			b.style.fontWeight = activo ? "600" : "";
 		}
 
+		const cuerpo = q<HTMLElement>("#sim-crear-cuerpo");
+		let deslizando = false;
+
+		/**
+		 * Clásica ↔ Múltiple como un toggle: hacia Múltiple (a la derecha del
+		 * selector) el contenido sale por la izquierda y el nuevo entra por la
+		 * derecha; de vuelta, al revés. La píldora del selector viaja a la vez.
+		 */
+		async function deslizarTipo(tipo: "binaria" | "multiple") {
+			if (deslizando) return;
+			deslizando = true;
+			const sentido = tipo === "multiple" ? 1 : -1;
+			const antes = alturaVisible();
+			escenario.style.height = antes + "px";
+			try {
+				/* La píldora y los colores se mueven ya; el contenido, a la vez. */
+				for (const b of qa<HTMLButtonElement>(".tipo")) {
+					b.style.color =
+						b.dataset.tipo === tipo ? "var(--color-primary)" : "var(--color-muted)";
+				}
+				animate(
+					q<HTMLElement>("#sim-pildora"),
+					{ x: tipo === "multiple" ? "100%" : "0%" },
+					MUELLE,
+				);
+				await animate(
+					cuerpo,
+					{ x: [0, -48 * sentido], opacity: [1, 0] },
+					{ duration: 0.16, ease: "easeIn" },
+				).finished;
+
+				elegirTipo(tipo);
+				animarAltura(antes);
+
+				await animate(
+					cuerpo,
+					{ x: [48 * sentido, 0], opacity: [0, 1] },
+					MUELLE,
+				).finished;
+			} finally {
+				cuerpo.style.transform = "";
+				cuerpo.style.opacity = "";
+				deslizando = false;
+			}
+		}
+
 		function elegirTipo(tipo: "binaria" | "multiple") {
 			estado.tipo = tipo;
 			for (const b of qa<HTMLButtonElement>(".tipo")) {
 				const activo = b.dataset.tipo === tipo;
 				b.setAttribute("aria-pressed", String(activo));
-				b.style.background = activo ? "var(--color-primary-soft)" : "transparent";
 				b.style.color = activo ? "var(--color-primary)" : "var(--color-muted)";
 			}
+			animate(
+				q<HTMLElement>("#sim-pildora"),
+				{ x: tipo === "multiple" ? "100%" : "0%" },
+				MUELLE,
+			);
 			pregunta.placeholder = datos.placeholder[tipo];
 			pintarVisibilidad();
 		}
@@ -1142,7 +1202,7 @@ const PLACEHOLDER = {
 		for (const b of qa<HTMLButtonElement>(".tipo")) {
 			b.addEventListener("click", () => {
 				if (b.dataset.tipo === estado.tipo) return;
-				cambiarDentro(() => elegirTipo(b.dataset.tipo as "binaria" | "multiple"));
+				deslizarTipo(b.dataset.tipo as "binaria" | "multiple");
 				animate(b, { scale: [1, 0.96, 1] }, { duration: 0.25 });
 			});
 		}
