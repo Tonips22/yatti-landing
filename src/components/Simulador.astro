@@ -1,11 +1,15 @@
 ---
 /**
- * Simulador jugable del ciclo de una predicción.
+ * Simulador jugable del ciclo de una predicción, fiel a la `1.3.0` de la app.
  *
  * Cada paso es la pantalla real de la app reducida a lo esencial, y el texto
  * está copiado de ella (`new-prediction.tsx`, `prediction/[id].tsx`,
- * `resolucion-justa.tsx`) para que lo que se promete aquí sea lo que hay dentro.
- * Las fórmulas de puntuación son las de `lib/prediccion.ts`.
+ * `opciones.tsx`, `eleccion-arbitro.tsx`, `resolucion.tsx`) para que lo que se
+ * promete aquí sea lo que hay dentro. Las fórmulas de puntuación son las de
+ * `lib/prediccion.ts` (clásicas) y `lib/multiple.ts` («Múltiple»).
+ *
+ * Desde la `1.2.0` no hay modos de liga: el árbitro es un interruptor de cada
+ * predicción y el resultado «cuenta al instante, con 48 h para disputarlo».
  */
 
 const PASOS = [
@@ -16,38 +20,30 @@ const PASOS = [
 	{ n: 5, nombre: "Puntuar" },
 ];
 
-const MIEMBROS = ["Nadie en concreto", "Julia", "Toni", "Marta", "Dani"];
+/**
+ * La liga del simulador: tú y cuatro más. Cinco miembros es lo que hace que
+ * el 2/3 de una disputa sea «4 de 5». El orden es la antigüedad en la liga,
+ * que es el desempate de la elección de árbitro.
+ */
+const LIGA = ["Marta", "Dani", "Tú", "Laura", "Iván"];
+const SUJETOS = ["Nadie en concreto", ...LIGA];
 
-/** Clicar rellena el textarea y ajusta el sujeto: es el atajo de la app. */
-const EJEMPLOS = [
-	{ texto: "¿Conseguirá Toni trabajo antes de octubre?", sujeto: "Toni" },
-	{ texto: "¿Aguantará Julia la dieta hasta fin de mes?", sujeto: "Julia" },
+/** Clicar rellena la pregunta y ajusta el sujeto o las personas: es el atajo de la app. */
+const EJEMPLOS_CLASICA = [
+	{ texto: "¿Conseguirá Dani trabajo antes de octubre?", sujeto: "Dani" },
+	{ texto: "¿Aguantará Laura la dieta hasta fin de mes?", sujeto: "Laura" },
 	{ texto: "¿Se mudará Marta de piso este año?", sujeto: "Marta" },
 	{ texto: "¿Volverán esos dos antes de Navidad?", sujeto: "Nadie en concreto" },
-	{ texto: "¿Dani acabará la carrera en junio?", sujeto: "Dani" },
+	{ texto: "¿Iván acabará la carrera en junio?", sujeto: "Iván" },
 ];
 
-const MODOS = [
-	{
-		id: "confianza",
-		nombre: "Confianza",
-		texto:
-			"Quien la creó resuelve directo. Para grupos que se fían entre sí.",
-	},
-	{
-		id: "justo",
-		nombre: "Justo",
-		texto:
-			"Se propone un resultado y se abre una ventana de gracia. Si nadie disputa, queda firme. Si alguien disputa, escribe su motivo a la vista de todos y el grupo vota.",
-	},
-	{
-		id: "arbitro",
-		nombre: "Árbitro",
-		texto:
-			"El juez se vota AL CREAR la predicción, cuando nadie sabe todavía por dónde va a salir. Sigue jugando, y su pronóstico queda visible para todos.",
-	},
+const EJEMPLOS_MULTIPLE = [
+	{ texto: "¿Quién llegará tarde a la boda?", personas: ["Marta", "Dani", "Iván"] },
+	{ texto: "¿Quién ligará antes esta noche?", personas: ["Tú", "Dani", "Laura", "Iván"] },
+	{ texto: "¿Quién se dormirá primero en el viaje?", personas: ["Marta", "Laura", "Iván"] },
 ];
 
+/** Los pronósticos de los demás en una clásica. Iván se esconde en el 50. */
 const RIVALES = [
 	{ nombre: "Marta", prob: 85 },
 	{ nombre: "Dani", prob: 40 },
@@ -55,14 +51,17 @@ const RIVALES = [
 	{ nombre: "Iván", prob: 50 },
 ];
 
-const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
+const PLACEHOLDER = {
+	binaria: "¿Conseguirá Manuel trabajo antes de octubre?",
+	multiple: "¿Quién llegará tarde a la boda?",
+};
 ---
 
 <script
 	type="application/json"
 	id="sim-datos"
 	is:inline
-	set:html={JSON.stringify({ rivales: RIVALES, modos: MODOS })}
+	set:html={JSON.stringify({ rivales: RIVALES, liga: LIGA, placeholder: PLACEHOLDER })}
 ></script>
 
 <section id="como-funciona" class="mx-auto max-w-3xl px-5 py-24">
@@ -73,8 +72,8 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			Cómo funciona
 		</h2>
 		<p class="mx-auto mt-4 max-w-xl text-secondary leading-relaxed">
-			Una predicción entera, de principio a fin. Escribe la tuya y juega los
-			cinco pasos que usa la app.
+			Una predicción entera, de principio a fin. Escribe la tuya, de Sí o No o
+			entre varias personas, y juega los cinco pasos que usa la app.
 		</p>
 	</div>
 
@@ -124,26 +123,76 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						Crea la predicción
 					</h3>
 					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
-						Dentro de una liga privada, con tus amigos y nadie más. Escribe la
-						tuya o tira de un ejemplo.
+						Dentro de una liga privada, con tus amigos y nadie más.{" "}
+						<span data-solo="binaria">Una Clásica es de Sí o No.</span>
+						<span data-solo="multiple" hidden
+							>Una Múltiple va entre varias personas, y siempre lleva también
+							«Nadie / Otro».</span
+						>
 					</p>
 
-					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
-						¿Sobre quién va?
-					</p>
-					<div data-escalonar class="flex flex-wrap gap-2">
-						{
-							MIEMBROS.map((m, i) => (
-								<button
-									type="button"
-									class="sujeto rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
-									data-sujeto={m}
-									aria-pressed={i === 0 ? "true" : "false"}
-								>
-									{m}
-								</button>
-							))
-						}
+					<div
+						data-escalonar
+						class="mt-6 flex rounded-2xl border border-glass-border bg-card p-1"
+						role="group"
+						aria-label="Tipo de predicción"
+					>
+						<button
+							type="button"
+							class="tipo flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
+							data-tipo="binaria"
+							aria-pressed="true">Clásica</button
+						>
+						<button
+							type="button"
+							class="tipo flex-1 rounded-xl px-4 py-2 font-semibold text-sm transition-colors"
+							data-tipo="multiple"
+							aria-pressed="false">Múltiple</button
+						>
+					</div>
+
+					<div data-solo="binaria">
+						<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
+							¿Sobre quién va?
+						</p>
+						<div data-escalonar class="flex flex-wrap gap-2">
+							{
+								SUJETOS.map((m, i) => (
+									<button
+										type="button"
+										class="sujeto rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
+										data-sujeto={m}
+										aria-pressed={i === 0 ? "true" : "false"}
+									>
+										{m}
+									</button>
+								))
+							}
+						</div>
+					</div>
+
+					<div data-solo="multiple" hidden>
+						<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
+							¿Entre quiénes?
+						</p>
+						<div data-escalonar class="flex flex-wrap gap-2">
+							{
+								LIGA.map((m) => (
+									<button
+										type="button"
+										class="persona flex items-center gap-1.5 rounded-full border border-glass-border bg-card px-3 py-1.5 text-secondary text-sm transition-colors"
+										data-persona={m}
+										aria-pressed="false"
+									>
+										{m}
+										<span class="marca" aria-hidden="true" hidden>✓</span>
+									</button>
+								))
+							}
+						</div>
+						<p id="sim-minimo" data-escalonar class="mt-2 text-muted text-xs">
+							Marca al menos dos personas.
+						</p>
 					</div>
 
 					<label
@@ -158,16 +207,16 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						id="sim-pregunta"
 						rows="2"
 						maxlength="280"
-						placeholder="¿Conseguirá Manu trabajo antes de octubre?"
+						placeholder={PLACEHOLDER.binaria}
 						class="w-full resize-none rounded-2xl border border-glass-border bg-card px-4 py-3 text-foreground leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-primary"
 					></textarea>
 					<p class="mt-1 text-right text-muted text-xs tabular-nums">
 						<span id="sim-cuenta">0</span>/280
 					</p>
 
-					<div data-escalonar class="mt-3 flex flex-wrap gap-2">
+					<div data-escalonar data-solo="binaria" class="mt-3 flex flex-wrap gap-2">
 						{
-							EJEMPLOS.map((e) => (
+							EJEMPLOS_CLASICA.map((e) => (
 								<button
 									type="button"
 									class="ejemplo rounded-full border border-dashed border-glass-border px-3 py-1.5 text-left text-muted text-xs transition-colors hover:border-primary hover:text-primary"
@@ -179,24 +228,67 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 							))
 						}
 					</div>
+					<div data-escalonar data-solo="multiple" hidden class="mt-3 flex flex-wrap gap-2">
+						{
+							EJEMPLOS_MULTIPLE.map((e) => (
+								<button
+									type="button"
+									class="ejemplo rounded-full border border-dashed border-glass-border px-3 py-1.5 text-left text-muted text-xs transition-colors hover:border-primary hover:text-primary"
+									data-texto={e.texto}
+									data-personas={e.personas.join(",")}
+								>
+									{e.texto}
+								</button>
+							))
+						}
+					</div>
 
+					<div data-escalonar class="mt-6 flex items-center gap-3">
+						<div class="flex-1">
+							<p class="font-semibold text-foreground">Elegir árbitro</p>
+							<p class="text-muted text-sm leading-5">
+								El grupo vota quién la resuelve.
+							</p>
+						</div>
+						<button
+							type="button"
+							role="switch"
+							id="sim-arbitro"
+							aria-checked="false"
+							aria-label="Elegir árbitro"
+							class="relative h-7 w-12 shrink-0 rounded-full transition-colors"
+						>
+							<span
+								class="perilla absolute top-0.5 left-0.5 block h-6 w-6 rounded-full bg-white shadow"
+							></span>
+						</button>
+					</div>
 				</div>
 
 				<!-- 2 · Pronosticar ───────────────────────────── -->
 				<div class="panel" data-panel="2" role="tabpanel" hidden>
 					<h3 data-escalonar class="font-heading text-xl font-bold text-foreground">
-						Pon tu porcentaje
+						<span data-solo="binaria">Pon tu porcentaje</span>
+						<span data-solo="multiple" hidden>Reparte tu 100 %</span>
 					</h3>
 					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
-						10 % si lo ves imposible, 90 % si lo tienes clarísimo. Nadie ve el de
-						los demás hasta que cierra el plazo.
+						<span data-solo="binaria"
+							>10 % si lo ves imposible, 90 % si lo tienes clarísimo.</span
+						>
+						<span data-solo="multiple" hidden
+							>De 5 en 5, entre todas las opciones, hasta llegar a 100. Cuanto
+							más le des a quien acabe siendo, mejor.</span
+						>{" "}
+						Nadie ve el de los demás hasta que cierra el plazo.
 					</p>
 
+					<!-- Clásica: el deslizador -->
 					<div
 						data-escalonar
+						data-solo="binaria"
 						class="mt-6 rounded-2xl border border-glass-border bg-card p-5"
 					>
-						<p class="text-muted text-sm" data-eco-pregunta>{PREGUNTA_POR_DEFECTO}</p>
+						<p class="text-muted text-sm" data-eco-pregunta></p>
 
 						<p
 							id="sim-valor"
@@ -205,7 +297,14 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						>
 							73 %
 						</p>
+						<p class="mt-2 text-center text-secondary">
+							¿Qué probabilidad le das a que ocurra?
+						</p>
 
+						<div class="mt-4 flex justify-between text-xs">
+							<span class="text-danger">No lo veo</span>
+							<span class="text-success">Seguro</span>
+						</div>
 						<label for="sim-prob" class="sr-only">Tu porcentaje</label>
 						<input
 							id="sim-prob"
@@ -214,7 +313,7 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 							max="100"
 							step="1"
 							value="73"
-							class="mt-2 w-full"
+							class="w-full"
 						/>
 
 						<p
@@ -222,7 +321,8 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 							class="mt-3 rounded-xl bg-warning-soft px-3 py-2 text-[13px] text-warning leading-relaxed"
 							hidden
 						>
-							Un 50 % clavado es no mojarse: nunca te hundes, pero nunca ganas.
+							Un 50 % clavado es no mojarse: da lo mismo pase lo que pase. Nunca
+							te hundes, pero nunca ganas.
 						</p>
 
 						<button
@@ -233,16 +333,90 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 							Sellar mi pronóstico
 						</button>
 
-						<div class="mt-5 flex items-center gap-2 border-hairline border-t pt-4">
-							<span class="text-muted text-sm">Los demás:</span>
-							{
-								RIVALES.map(() => (
-									<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft font-semibold text-muted text-xs">
-										?
-									</span>
-								))
-							}
+						<p class="mt-3 text-center text-muted text-xs">
+							🔒 Nadie ve los pronósticos hasta que cierra
+						</p>
+					</div>
+
+					<!-- Múltiple: el reparto con ±5 -->
+					<div
+						data-escalonar
+						data-solo="multiple"
+						hidden
+						class="mt-6 rounded-2xl border border-glass-border bg-card p-5"
+					>
+						<p class="text-muted text-sm" data-eco-pregunta></p>
+
+						<div class="mt-4 flex items-baseline justify-between">
+							<span class="text-secondary">Reparte tu 100%</span>
+							<span
+								id="sim-repartido"
+								class="font-heading text-3xl font-bold tabular-nums text-primary"
+								>0%</span
+							>
 						</div>
+						<div class="mt-2 h-3.5 overflow-hidden rounded-full bg-hairline">
+							<span
+								id="sim-repartido-barra"
+								class="block h-full w-0 rounded-full bg-primary"></span>
+						</div>
+
+						<ul id="sim-reparto" class="mt-5 grid gap-3"></ul>
+
+						<p
+							id="sim-quedan"
+							class="mt-4 text-center font-medium text-muted text-sm tabular-nums"
+						>
+							Te quedan 100%
+						</p>
+
+						<button
+							type="button"
+							id="sim-sellar-reparto"
+							class="mt-4 w-full rounded-2xl bg-primary px-6 py-3.5 font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+							disabled
+						>
+							Sellar mi reparto
+						</button>
+
+						<p class="mt-3 text-center text-muted text-xs">
+							🔒 Nadie ve los repartos hasta que cierra
+						</p>
+					</div>
+
+					<div
+						data-escalonar
+						class="mt-5 flex items-center gap-2 border-hairline border-t pt-4"
+					>
+						<span class="text-muted text-sm">Los demás:</span>
+						{
+							RIVALES.map(() => (
+								<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft font-semibold text-muted text-xs">
+									?
+								</span>
+							))
+						}
+					</div>
+
+					<!-- La elección de árbitro, a la vez que el pronóstico -->
+					<div
+						data-escalonar
+						data-solo="arbitro"
+						hidden
+						class="mt-5 rounded-2xl border border-glass-border bg-card p-5"
+					>
+						<p class="text-center font-semibold text-foreground">
+							⚖️ ¿Quién arbitra esta?
+						</p>
+						<p class="mt-1 text-center text-muted text-sm">
+							Se decide ahora, antes de saber cómo acaba.
+						</p>
+						<ul id="sim-eleccion" class="mt-4 grid gap-2"></ul>
+						<p class="mt-4 text-center text-muted text-xs leading-5">
+							Arbitra quien más votos reciba. En caso de empate, quien lleve más
+							tiempo en la liga. Puedes cambiar tu voto hasta el cierre, pero no
+							votarte a ti mismo.
+						</p>
 					</div>
 				</div>
 
@@ -252,17 +426,54 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						Se cierra el plazo y se destapa todo
 					</h3>
 
-					<p class="mt-5 text-muted text-sm" data-eco-pregunta>{PREGUNTA_POR_DEFECTO}</p>
+					<p class="mt-5 text-muted text-sm" data-eco-pregunta></p>
 
-					<ul id="sim-destape" class="mt-4 grid gap-2"></ul>
-
-					<div
-						class="mt-4 flex items-center justify-between rounded-2xl border border-glass-border bg-card px-4 py-3"
-					>
-						<span class="text-secondary text-sm">Media del grupo</span>
-						<span id="sim-media" class="font-heading font-bold text-lg tabular-nums"
-							>0 %</span
+					<p data-solo="arbitro" hidden class="mt-3">
+						<span
+							class="inline-flex items-center gap-1.5 rounded-full border border-warning bg-warning-soft px-3 py-1 font-medium text-warning text-xs"
 						>
+							⚖️ Arbitra <span data-eco-arbitro></span>
+						</span>
+					</p>
+
+					<div data-solo="binaria">
+						<ul id="sim-destape" class="mt-4 grid gap-2"></ul>
+
+						<div
+							class="mt-4 flex items-center justify-between rounded-2xl border border-glass-border bg-card px-4 py-3"
+						>
+							<span class="text-secondary text-sm">El grupo dijo</span>
+							<span id="sim-media" class="font-heading font-bold text-lg tabular-nums"
+								>0 %</span
+							>
+						</div>
+					</div>
+
+					<div data-solo="multiple" hidden>
+						<p class="mt-4 mb-2 font-semibold text-foreground text-sm">
+							El grupo dijo
+						</p>
+						<ul
+							id="sim-medias"
+							class="grid gap-3 rounded-2xl border border-glass-border bg-card p-4"
+						>
+						</ul>
+						<p class="mt-5 mb-2 font-semibold text-foreground text-sm">
+							Cómo repartió cada uno
+						</p>
+						<ul
+							id="sim-repartos"
+							class="overflow-hidden rounded-2xl border border-glass-border bg-card"
+						>
+						</ul>
+						<p
+							data-sin-reparto
+							hidden
+							class="mt-3 rounded-xl bg-warning-soft px-3 py-2 text-[13px] text-warning leading-relaxed"
+						>
+							Tu reparto no llegaba al 100 %, así que no entra. Vuelve al paso 2 y
+							termina de repartir.
+						</p>
 					</div>
 
 					<button
@@ -280,102 +491,122 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						Llega la fecha y se resuelve
 					</h3>
 					<p data-escalonar class="mt-2 text-secondary leading-relaxed">
-						Quién decide el resultado lo elige quien crea la liga, entre tres
-						modos.
+						<span data-solo="sin-arbitro"
+							>La resuelve quien la creó, o la persona de la que va.</span
+						>
+						<span data-solo="arbitro" hidden
+							>La resuelve <strong class="text-foreground" data-eco-arbitro></strong>,
+							a quien eligió el grupo antes de saber cómo acababa.</span
+						>{" "}
+						Cuenta al momento: sello, clasificación y aviso a todos.
 					</p>
 
-					<div data-escalonar class="mt-5 flex flex-wrap gap-2">
-						{
-							MODOS.map((m) => (
-								<button
-									type="button"
-									class="modo rounded-full border border-glass-border bg-card px-4 py-2 font-medium text-secondary text-sm transition-colors"
-									data-modo={m.id}
-									aria-pressed={m.id === "justo" ? "true" : "false"}
-								>
-									Modo {m.nombre}
-								</button>
-							))
-						}
-					</div>
-
-					<p
-						id="sim-modo-texto"
+					<div
 						data-escalonar
-						class="mt-4 rounded-2xl border border-glass-border bg-card p-4 text-[15px] text-secondary leading-relaxed"
+						class="mt-5 rounded-2xl border border-glass-border bg-card p-5"
 					>
-					</p>
+						<p class="text-center font-semibold text-foreground">
+							<span data-solo="binaria">¿Ocurrió al final?</span>
+							<span data-solo="multiple" hidden>¿Quién fue al final?</span>
+						</p>
 
-					<p data-escalonar class="mt-6 mb-2 font-semibold text-foreground text-sm">
-						¿Qué pasó?
-					</p>
-					<div data-escalonar class="grid gap-2 sm:grid-cols-3">
+						<div data-solo="binaria" class="mt-4 grid grid-cols-2 gap-3">
+							<button
+								type="button"
+								class="resultado rounded-2xl border-2 px-4 py-3.5 font-bold text-lg transition-colors"
+								data-resultado="si"
+								aria-pressed="true">Sí</button
+							>
+							<button
+								type="button"
+								class="resultado rounded-2xl border-2 px-4 py-3.5 font-bold text-lg transition-colors"
+								data-resultado="no"
+								aria-pressed="false">No</button
+							>
+						</div>
+
+						<ul id="sim-ganadoras" data-solo="multiple" hidden class="mt-4 grid gap-2"></ul>
+
+						<p class="mt-4 text-center text-muted text-[13px] leading-relaxed">
+							Contará al momento. El grupo tendrá 48 h para disputarlo si no está
+							de acuerdo.
+						</p>
+
 						<button
 							type="button"
-							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
-							data-resultado="si"
-							aria-pressed="true">Sí ocurrió</button
+							id="sim-anular"
+							aria-pressed="false"
+							class="mt-3 w-full rounded-xl px-4 py-2 font-medium text-secondary text-sm transition-colors hover:bg-hairline"
 						>
-						<button
-							type="button"
-							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
-							data-resultado="no"
-							aria-pressed="false">No ocurrió</button
-						>
-						<button
-							type="button"
-							class="resultado rounded-2xl border border-glass-border bg-card px-4 py-3 font-semibold text-secondary transition-colors"
-							data-resultado="anulada"
-							aria-pressed="false">Anular</button
-						>
+							Anular
+						</button>
+						<p class="mt-1 text-center text-muted text-xs">
+							Anula si la pregunta resultó ambigua o ya no aplica.
+						</p>
 					</div>
 
-					<!-- Rama del Modo Justo -->
-					<div id="sim-justo" class="mt-5">
-						<div class="rounded-2xl border border-glass-border bg-card p-4">
-							<div class="flex items-baseline justify-between">
-								<span class="font-semibold text-foreground text-sm">
-									Ventana de gracia · 24 h
-								</span>
-								<span class="text-muted text-xs">Si nadie disputa, queda firme</span>
-							</div>
-							<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-hairline">
-								<div id="sim-gracia" class="h-full w-0 rounded-full bg-success"></div>
-							</div>
+					<!-- Las 48 h para disputar -->
+					<div id="sim-disputable" class="mt-4">
+						<div class="rounded-2xl border border-glass-border bg-card p-5">
+							<p
+								class="rounded-xl bg-warning-soft px-4 py-2.5 text-center font-medium text-sm text-warning"
+							>
+								⏱ <span id="sim-resolvio"></span> · queda 1 d 23 h para disputarlo
+							</p>
 
 							<button
 								type="button"
 								id="sim-disputar"
-								class="mt-4 rounded-xl border border-danger px-4 py-2 font-medium text-danger text-sm transition-colors hover:bg-danger-soft"
+								class="mt-4 w-full rounded-xl px-4 py-2.5 font-medium text-secondary text-sm transition-colors hover:bg-hairline"
 							>
-								Disputar el resultado
+								No estoy de acuerdo
 							</button>
 
 							<div id="sim-disputa" hidden class="mt-4">
 								<label for="sim-motivo" class="mb-2 block font-semibold text-foreground text-sm">
-									Tu motivo, a la vista de todos
+									¿Por qué la disputas?
 								</label>
 								<textarea
 									id="sim-motivo"
 									rows="2"
-									maxlength="240"
-									placeholder="Un freelance de tres semanas no es «conseguir trabajo»."
+									maxlength="500"
+									placeholder="Lo verá todo el grupo. Explica qué pasó de verdad."
 									class="w-full resize-none rounded-xl border border-glass-border bg-surface px-3 py-2 text-foreground text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
 								></textarea>
-
-								<p class="mt-4 mb-2 font-semibold text-foreground text-sm">
-									Votación del grupo
+								<button
+									type="button"
+									id="sim-enviar-disputa"
+									class="mt-2 w-full rounded-xl bg-danger px-4 py-2.5 font-semibold text-on-primary text-sm transition-opacity disabled:opacity-40"
+									disabled
+								>
+									Disputar
+								</button>
+								<p class="mt-2 text-center text-muted text-xs leading-5">
+									Mientras el grupo vota, la predicción sale de la clasificación.
 								</p>
-								<ul id="sim-votos" class="grid gap-3"></ul>
-								<p id="sim-umbral" class="mt-3 text-muted text-xs leading-relaxed"></p>
 							</div>
+
+							<div id="sim-votacion" hidden class="mt-4">
+								<div class="rounded-2xl bg-danger-soft px-4 py-3">
+									<p class="font-semibold text-danger text-sm">Tú lo disputas</p>
+									<p id="sim-motivo-eco" class="mt-1 text-secondary text-sm leading-5"></p>
+								</div>
+
+								<p id="sim-pregunta-voto" class="mt-4 text-center font-semibold text-foreground"></p>
+								<div id="sim-votar" class="mt-3 grid gap-2"></div>
+
+								<div class="mt-4 border-hairline border-t pt-4">
+									<p id="sim-umbral" class="text-muted text-xs"></p>
+									<ul id="sim-recuento" class="mt-3 grid gap-3"></ul>
+									<p id="sim-desenlace" class="mt-3 text-muted text-xs leading-5"></p>
+								</div>
+							</div>
+
+							<p class="mt-3 text-center text-muted text-xs">
+								Si nadie lo disputa, queda firme.
+							</p>
 						</div>
 					</div>
-
-					<p class="mt-4 text-muted text-sm leading-relaxed">
-						¿La pregunta estaba mal hecha y no hay forma de resolverla? Se anula,
-						y entonces no afecta a la puntuación de nadie.
-					</p>
 				</div>
 
 				<!-- 5 · Puntuar ───────────────────────────────── -->
@@ -408,23 +639,24 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 							class="mt-6 rounded-2xl border border-glass-border bg-card p-5"
 							aria-live="polite"
 						>
-							<p class="text-muted text-sm">
-								Dijiste <span id="sim-resumen-prob" class="font-semibold">70 %</span> y <span
-									id="sim-resumen-res"
-									class="font-semibold">sí ocurrió</span
-								>
-							</p>
-							<p class="mt-3 flex items-baseline gap-2">
-								<span
-									id="sim-indice"
-									class="font-heading text-5xl font-bold tabular-nums">91</span
-								>
-								<span class="text-muted text-sm">índice de acierto (0-100)</span>
-							</p>
-							<p class="mt-2 text-muted text-[13px]">
-								Brier = <span id="sim-brier" class="tabular-nums">0.090</span> · índice
-								= (1 − Brier) × 100
-							</p>
+							<p id="sim-resumen" class="text-muted text-sm"></p>
+							<div id="sim-mi-indice">
+								<p class="mt-3 flex items-baseline gap-2">
+									<span
+										id="sim-indice"
+										class="font-heading text-5xl font-bold tabular-nums">91</span
+									>
+									<span class="text-muted text-sm">índice de acierto (0-100)</span>
+								</p>
+								<p class="mt-2 text-muted text-[13px]">
+									Brier = <span id="sim-brier" class="tabular-nums">0.090</span> ·
+									índice = (1 − Brier) × 100
+								</p>
+								<p id="sim-formula-multiple" class="mt-1 text-muted text-[13px]" hidden>
+									En una Múltiple, Brier = Σ (resultado − %)² / 2 sobre todas las
+									opciones: con dos, da lo mismo que una de Sí o No.
+								</p>
+							</div>
 						</div>
 
 						<p data-escalonar class="mt-8 mb-3 font-semibold text-foreground text-sm">
@@ -437,7 +669,8 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 						</ol>
 						<p data-escalonar class="mt-3 text-muted text-xs leading-relaxed">
 							La liga ordena por Brier <strong>medio</strong>, no acumulado: una
-							mala racha no te hunde de por vida. Y hay tabla del mes, para que
+							mala racha no te hunde de por vida. Las Múltiple y las de Sí o No
+							suman en la misma clasificación. Y hay tabla del mes, para que
 							siempre haya carrera nueva.
 						</p>
 					</div>
@@ -522,19 +755,54 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		document.getElementById("sim-datos")!.textContent!,
 	) as {
 		rivales: { nombre: string; prob: number }[];
-		modos: { id: string; nombre: string; texto: string }[];
+		liga: string[];
+		placeholder: { binaria: string; multiple: string };
 	};
 
 	const RIVALES = datos.rivales;
-	const MODOS: Record<string, string> = Object.fromEntries(
-		datos.modos.map((m) => [m.id, m.texto]),
-	);
+	const LIGA = datos.liga;
+	const NOMBRES_RIVALES = RIVALES.map((r) => r.nombre);
+
+	/** La opción que añade siempre el servidor (`crear_prediccion_multiple`). */
+	const NADIE = "Nadie / Otro";
+
+	/** Lo que fija la app: ±5 por toque (`opciones.tsx`). */
+	const PASO = 5;
+
+	type Reparto = Record<string, number>;
+
+	/* ── Las cuentas, copiadas de la app ─────────────────────── */
 
 	/** Mismas fórmulas que `lib/prediccion.ts` en el repo de la app. */
 	const brierDe = (prob: number, ocurrio: boolean) =>
 		((ocurrio ? 1 : 0) - prob / 100) ** 2;
 	const indiceDe = (prob: number, ocurrio: boolean) =>
 		Math.round((1 - brierDe(prob, ocurrio)) * 100);
+
+	/** `brierMultiple` de `lib/multiple.ts`: Σ (o − p)² / 2. */
+	function brierMultiple(reparto: Reparto, ganadora: string) {
+		const ids = new Set([...Object.keys(reparto), ganadora]);
+		let suma = 0;
+		for (const id of ids) {
+			const p = (reparto[id] ?? 0) / 100;
+			const o = id === ganadora ? 1 : 0;
+			suma += (o - p) ** 2;
+		}
+		return suma / 2;
+	}
+	const indiceMultiple = (reparto: Reparto, ganadora: string) =>
+		Math.round((1 - brierMultiple(reparto, ganadora)) * 100);
+
+	const quedan = (reparto: Reparto) =>
+		100 - Object.values(reparto).reduce((a, b) => a + b, 0);
+
+	/** `mover` de `lib/multiple.ts`: solo toca ESA opción y nunca se pasa de 100. */
+	function mover(reparto: Reparto, id: string, delta: number): Reparto {
+		const actual = reparto[id] ?? 0;
+		const tope = actual + Math.max(quedan(reparto), 0);
+		const nuevo = Math.min(Math.max(actual + delta, 0), tope);
+		return { ...reparto, [id]: nuevo };
+	}
 
 	/** Misma escala que `colorProbabilidad()` en la app. */
 	function colorProb(v: number) {
@@ -544,6 +812,73 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		if (v >= 30) return "var(--color-prob-baja)";
 		return "var(--color-prob-muy-baja)";
 	}
+
+	/**
+	 * `tramosDeColor` + `colorDeTramo` de la app: en un reparto el color sale
+	 * del PUESTO, no del valor (con ocho opciones nadie pasa del 30 %).
+	 */
+	const TRAMOS = [
+		"var(--color-prob-total)",
+		"var(--color-prob-alta)",
+		"var(--color-prob-media)",
+		"var(--color-prob-baja)",
+		"var(--color-prob-muy-baja)",
+	];
+	function coloresDeReparto(reparto: Reparto): Record<string, string | null> {
+		const distintos = [
+			...new Set(Object.values(reparto).filter((v) => v > 0)),
+		].sort((a, b) => b - a);
+		const ultimo = distintos.length - 1;
+		return Object.fromEntries(
+			Object.entries(reparto).map(([id, v]) => {
+				if (v <= 0) return [id, null];
+				const puesto = distintos.indexOf(v);
+				return [id, TRAMOS[ultimo === 0 ? 0 : Math.round((puesto * 4) / ultimo)]];
+			}),
+		);
+	}
+
+	/* ── Los repartos de los demás ───────────────────────────── */
+
+	function hash(s: string) {
+		let h = 7;
+		for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
+		return Math.abs(h);
+	}
+
+	/** Cuánto se moja cada uno: Marta lo concentra todo, Iván lo reparte. */
+	const CONCENTRACION: Record<string, number> = {
+		Marta: 3,
+		Dani: 1.8,
+		Laura: 2.4,
+		Iván: 0.6,
+	};
+
+	/**
+	 * Un reparto creíble y estable para un rival: mismo nombre y mismas
+	 * opciones, mismo reparto. Pesos pseudoaleatorios, afilados según el
+	 * carácter de cada uno y redondeados a múltiplos de 5 que suman 100.
+	 */
+	function repartoDe(nombre: string, opciones: string[]): Reparto {
+		const pesos = opciones.map((o) => {
+			const base = o === NADIE ? 0.35 : 0.4 + (hash(nombre + o) % 100) / 100;
+			return base ** (CONCENTRACION[nombre] ?? 1);
+		});
+		const total = pesos.reduce((a, b) => a + b, 0);
+		const unidades = pesos.map((p) => (p / total) * (100 / PASO));
+		const enteras = unidades.map(Math.floor);
+		let sobran = 100 / PASO - enteras.reduce((a, b) => a + b, 0);
+		const porResto = unidades
+			.map((u, i) => ({ i, resto: u - Math.floor(u) }))
+			.sort((a, b) => b.resto - a.resto);
+		for (const { i } of porResto) {
+			if (sobran-- <= 0) break;
+			enteras[i]++;
+		}
+		return Object.fromEntries(opciones.map((o, i) => [o, enteras[i] * PASO]));
+	}
+
+	/* ── La página ───────────────────────────────────────────── */
 
 	const raiz = document.getElementById("sim");
 
@@ -564,26 +899,66 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 
 		const pregunta = q<HTMLTextAreaElement>("#sim-pregunta");
 		const cuenta = q<HTMLElement>("#sim-cuenta");
+		const interruptor = q<HTMLButtonElement>("#sim-arbitro");
 		const deslizador = q<HTMLInputElement>("#sim-prob");
 		const valor = q<HTMLElement>("#sim-valor");
 		const cobardia = q<HTMLElement>("#sim-cobardia");
 		const sellar = q<HTMLButtonElement>("#sim-sellar");
+		const listaReparto = q<HTMLElement>("#sim-reparto");
+		const sellarReparto = q<HTMLButtonElement>("#sim-sellar-reparto");
+		const eleccion = q<HTMLElement>("#sim-eleccion");
 		const destape = q<HTMLElement>("#sim-destape");
 		const media = q<HTMLElement>("#sim-media");
 		const tabla = q<HTMLElement>("#sim-tabla");
-		const votos = q<HTMLElement>("#sim-votos");
 
 		const estado = {
 			paso: 1,
+			tipo: "binaria" as "binaria" | "multiple",
 			sujeto: "Nadie en concreto",
-			prob: 70,
-			sellado: false,
-			modo: "justo",
-			resultado: "si" as "si" | "no" | "anulada",
+			/** Las personas de una Múltiple, en el orden en que se marcan. */
+			personas: ["Marta", "Dani", "Laura"],
+			conArbitro: false,
+			prob: 73,
+			reparto: {} as Reparto,
+			/** Voto de árbitro de cada uno. El tuyo empieza vacío. */
+			votosArbitro: {
+				Marta: "Dani",
+				Dani: "Laura",
+				Laura: "Dani",
+				Iván: "Laura",
+			} as Record<string, string>,
+			resultado: true,
+			ganadora: "Marta",
+			anulada: false,
+			miVoto: null as "si" | "no" | "ambigua" | null,
 		};
 
+		const multiple = () => estado.tipo === "multiple";
+		const opciones = () => [...estado.personas, NADIE];
 		const textoPregunta = () =>
-			pregunta.value.trim() || pregunta.placeholder;
+			pregunta.value.trim() || datos.placeholder[estado.tipo];
+		const repartoCompleto = () =>
+			multiple() && quedan(estado.reparto) === 0;
+
+		/** Cómo se lee una opción: «Tú» va tal cual, como en la app («· tú»). */
+		const cara = (o: string) =>
+			o === NADIE ? "?" : o === "Tú" ? "Tú" : o.slice(0, 1);
+
+		/** El árbitro proclamado: más votos y, si empatan, más antigüedad. */
+		function arbitro() {
+			const votos = Object.values(estado.votosArbitro);
+			let mejor = LIGA[0];
+			let max = -1;
+			for (const c of LIGA) {
+				const n = votos.filter((v) => v === c).length;
+				if (n > max) {
+					max = n;
+					mejor = c;
+				}
+			}
+			return mejor;
+		}
+		const quienResuelve = () => (estado.conArbitro ? arbitro() : "Tú");
 
 		/* ── Animaciones base ──────────────────────────────────── */
 
@@ -593,6 +968,17 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 				onUpdate: (v) => {
 					el.textContent = Math.round(v) + sufijo;
 				},
+			});
+		}
+
+		/** Una fila con barra que se llena, como la `BarraAnimada` de la app. */
+		function llenar(barras: HTMLElement[], anchos: number[], retraso = 0.08) {
+			barras.forEach((barra, i) => {
+				animate(
+					barra,
+					{ width: ["0%", anchos[i] + "%"] },
+					{ ...MUELLE_SUAVE, delay: retraso * i + 0.1 },
+				);
 			});
 		}
 
@@ -618,9 +1004,16 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			const entrante = paneles[destino - 1];
 			if (saliente === entrante) return;
 
+			/* Solo los visibles: los de la otra clase de predicción se quedan
+			   ocultos y no cuentan para el escalonado. */
 			const hijos = [
 				...entrante.querySelectorAll<HTMLElement>("[data-escalonar]"),
-			];
+			].filter((h) => {
+				for (let e: HTMLElement | null = h; e && e !== entrante; e = e.parentElement) {
+					if (e.hidden) return false;
+				}
+				return true;
+			});
 
 			/* Se oculta ANTES de quitarle el `hidden`. Al revés, el navegador
 			   alcanza a pintar un fotograma a opacidad plena antes de que arranque
@@ -695,9 +1088,32 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			animate(progreso, { width: pct + "%" }, MUELLE_SUAVE);
 		}
 
+		/** Enseña lo de la clase de predicción elegida, y lo del árbitro si va. */
+		function pintarVisibilidad() {
+			for (const el of qa<HTMLElement>("[data-solo]")) {
+				const solo = el.dataset.solo;
+				el.hidden =
+					solo === "arbitro"
+						? !estado.conArbitro
+						: solo === "sin-arbitro"
+							? estado.conArbitro
+							: solo !== estado.tipo;
+			}
+		}
+
 		async function irA(n: number) {
 			const destino = Math.min(Math.max(n, 1), paneles.length);
 			if (transicionando || destino === estado.paso) return;
+
+			/* Como el botón Crear de la app: sin dos personas no hay Múltiple. */
+			if (destino > 1 && multiple() && estado.personas.length < 2) {
+				if (estado.paso !== 1) await irA(1);
+				const aviso = q<HTMLElement>("#sim-minimo");
+				aviso.style.color = "var(--color-danger)";
+				animate(aviso, { x: [0, -6, 6, -4, 4, 0] }, { duration: 0.4 });
+				return;
+			}
+
 			transicionando = true;
 			estado.paso = destino;
 
@@ -711,8 +1127,15 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 					for (const eco of qa<HTMLElement>("[data-eco-pregunta]")) {
 						eco.textContent = textoPregunta();
 					}
+					for (const eco of qa<HTMLElement>("[data-eco-arbitro]")) {
+						eco.textContent = arbitro();
+					}
+					if (destino === 2) {
+						pintarReparto(true);
+						pintarEleccion();
+					}
 					if (destino === 3) destapar();
-					if (destino === 4) pintarModo();
+					if (destino === 4) pintarResolver();
 					if (destino === 5) pintarMarcador();
 				});
 			} finally {
@@ -722,6 +1145,37 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 
 		/* ── Paso 1 ────────────────────────────────────────────── */
 
+		/** El estilo de «elegido» de los chips de personas, como en la app. */
+		function marcarChip(b: HTMLElement, activo: boolean) {
+			b.setAttribute("aria-pressed", String(activo));
+			b.style.borderColor = activo
+				? "var(--color-accent)"
+				: "var(--color-glass-border)";
+			b.style.background = activo ? "var(--color-accent-soft)" : "var(--color-card)";
+			b.style.color = activo ? "var(--color-foreground)" : "var(--color-secondary)";
+			b.style.fontWeight = activo ? "600" : "";
+		}
+
+		function elegirTipo(tipo: "binaria" | "multiple") {
+			if (tipo !== estado.tipo) reiniciarDisputa();
+			estado.tipo = tipo;
+			for (const b of qa<HTMLButtonElement>(".tipo")) {
+				const activo = b.dataset.tipo === tipo;
+				b.setAttribute("aria-pressed", String(activo));
+				b.style.background = activo ? "var(--color-primary-soft)" : "transparent";
+				b.style.color = activo ? "var(--color-primary)" : "var(--color-muted)";
+			}
+			pregunta.placeholder = datos.placeholder[tipo];
+			pintarVisibilidad();
+		}
+
+		for (const b of qa<HTMLButtonElement>(".tipo")) {
+			b.addEventListener("click", () => {
+				elegirTipo(b.dataset.tipo as "binaria" | "multiple");
+				animate(b, { scale: [1, 0.96, 1] }, { duration: 0.25 });
+			});
+		}
+
 		pregunta.addEventListener("input", () => {
 			cuenta.textContent = String(pregunta.value.length);
 		});
@@ -730,7 +1184,9 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			chip.addEventListener("click", () => {
 				pregunta.value = chip.dataset.texto!;
 				cuenta.textContent = String(pregunta.value.length);
-				elegirSujeto(chip.dataset.sujeto!);
+				if (chip.dataset.sujeto) elegirSujeto(chip.dataset.sujeto);
+				if (chip.dataset.personas)
+					elegirPersonas(chip.dataset.personas.split(","));
 				animate(pregunta, { scale: [1, 1.015, 1] }, { duration: 0.35 });
 				animate(chip, { scale: [1, 0.94, 1] }, { duration: 0.25 });
 			});
@@ -739,19 +1195,62 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		function elegirSujeto(nombre: string) {
 			estado.sujeto = nombre;
 			for (const b of qa<HTMLButtonElement>(".sujeto")) {
-				const activo = b.dataset.sujeto === nombre;
-				b.setAttribute("aria-pressed", String(activo));
-				b.style.borderColor = activo
-					? "var(--color-accent)"
-					: "var(--color-glass-border)";
-				b.style.background = activo ? "var(--color-accent-soft)" : "var(--color-card)";
-				b.style.color = activo ? "var(--color-accent)" : "var(--color-secondary)";
+				marcarChip(b, b.dataset.sujeto === nombre);
 			}
 		}
 
 		for (const b of qa<HTMLButtonElement>(".sujeto")) {
 			b.addEventListener("click", () => elegirSujeto(b.dataset.sujeto!));
 		}
+
+		function elegirPersonas(personas: string[]) {
+			estado.personas = personas;
+			/* Lo repartido a quien ya no es opción se pierde, como al rehacer la
+			   predicción: el reparto solo puede hablar de las opciones que hay. */
+			const validas = opciones();
+			estado.reparto = Object.fromEntries(
+				Object.entries(estado.reparto).filter(([id]) => validas.includes(id)),
+			);
+			if (!validas.includes(estado.ganadora)) estado.ganadora = validas[0];
+			for (const b of qa<HTMLButtonElement>(".persona")) {
+				const activo = personas.includes(b.dataset.persona!);
+				marcarChip(b, activo);
+				(b.querySelector(".marca") as HTMLElement).hidden = !activo;
+			}
+			const aviso = q<HTMLElement>("#sim-minimo");
+			if (personas.length >= 2) aviso.style.color = "";
+		}
+
+		for (const b of qa<HTMLButtonElement>(".persona")) {
+			b.addEventListener("click", () => {
+				const p = b.dataset.persona!;
+				elegirPersonas(
+					estado.personas.includes(p)
+						? estado.personas.filter((x) => x !== p)
+						: [...estado.personas, p],
+				);
+				animate(b, { scale: [1, 0.94, 1] }, { duration: 0.25 });
+			});
+		}
+
+		function pintarInterruptor() {
+			const on = estado.conArbitro;
+			interruptor.setAttribute("aria-checked", String(on));
+			interruptor.style.background = on
+				? "var(--color-success)"
+				: "var(--color-hairline)";
+			animate(
+				interruptor.querySelector(".perilla") as HTMLElement,
+				{ x: on ? 20 : 0 },
+				MUELLE,
+			);
+		}
+
+		interruptor.addEventListener("click", () => {
+			estado.conArbitro = !estado.conArbitro;
+			pintarInterruptor();
+			pintarVisibilidad();
+		});
 
 		/* ── Paso 2 ────────────────────────────────────────────── */
 
@@ -769,16 +1268,152 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		});
 
 		sellar.addEventListener("click", () => {
-			estado.sellado = true;
 			sellar.textContent = "Pronóstico sellado";
 			sellar.style.background = "var(--color-success)";
 			animate(sellar, { scale: [1, 0.96, 1] }, { duration: 0.3 });
 			animate(valor, { scale: [1, 1.12, 1], rotate: [0, -2, 0] }, MUELLE);
 		});
 
+		const botonPaso =
+			"flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg leading-none transition-opacity disabled:opacity-30";
+
+		/**
+		 * El reparto. Las filas se construyen al entrar (o al cambiar las
+		 * opciones) y luego solo se actualizan: reconstruirlas en cada toque
+		 * mataría la animación de las barras.
+		 */
+		function pintarReparto(reconstruir = false) {
+			const ops = opciones();
+			if (reconstruir || listaReparto.children.length !== ops.length) {
+				listaReparto.innerHTML = ops
+					.map(
+						(o) => `
+						<li class="grid gap-1.5" data-opcion="${o}">
+							<div class="flex items-center gap-3">
+								<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background:var(--color-primary-soft);color:var(--color-${o === NADIE ? "muted" : "primary"})">${cara(o)}</span>
+								<span class="min-w-0 flex-1 truncate text-[15px]" style="color:var(--color-${o === NADIE ? "secondary" : "foreground"})">${o}</span>
+								<button type="button" class="menos ${botonPaso}" style="border-color:var(--color-hairline);color:var(--color-foreground)" aria-label="Bajar ${o}">−</button>
+								<span class="valor w-12 text-center font-bold text-lg tabular-nums" style="color:var(--color-foreground)">0%</span>
+								<button type="button" class="mas ${botonPaso}" style="border-color:var(--color-hairline);color:var(--color-foreground)" aria-label="Subir ${o}">+</button>
+							</div>
+							<div class="h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
+								<span class="barra block h-full rounded-full transition-[width,background-color] duration-300" style="width:0%"></span>
+							</div>
+						</li>`,
+					)
+					.join("");
+
+				for (const fila of [...listaReparto.children] as HTMLElement[]) {
+					const id = fila.dataset.opcion!;
+					fila.querySelector(".menos")!.addEventListener("click", () => {
+						estado.reparto = mover(estado.reparto, id, -PASO);
+						pintarReparto();
+					});
+					fila.querySelector(".mas")!.addEventListener("click", () => {
+						estado.reparto = mover(estado.reparto, id, PASO);
+						pintarReparto();
+					});
+				}
+			}
+
+			const falta = quedan(estado.reparto);
+			const repartido = 100 - falta;
+			const colores = coloresDeReparto(estado.reparto);
+
+			for (const fila of [...listaReparto.children] as HTMLElement[]) {
+				const id = fila.dataset.opcion!;
+				const v = estado.reparto[id] ?? 0;
+				(fila.querySelector(".valor") as HTMLElement).textContent = v + "%";
+				const barra = fila.querySelector(".barra") as HTMLElement;
+				barra.style.width = v + "%";
+				barra.style.background = colores[id] ?? "transparent";
+				(fila.querySelector(".menos") as HTMLButtonElement).disabled = v <= 0;
+				(fila.querySelector(".mas") as HTMLButtonElement).disabled = falta <= 0;
+			}
+
+			const total = q<HTMLElement>("#sim-repartido");
+			total.textContent = repartido + "%";
+			total.style.color =
+				falta === 0 ? "var(--color-success)" : "var(--color-primary)";
+			const barraTotal = q<HTMLElement>("#sim-repartido-barra");
+			barraTotal.style.background = total.style.color;
+			animate(barraTotal, { width: repartido + "%" }, MUELLE_SUAVE);
+
+			const resto = q<HTMLElement>("#sim-quedan");
+			resto.textContent = falta === 0 ? "Repartido el 100%" : `Te quedan ${falta}%`;
+			resto.style.color =
+				falta === 0 ? "var(--color-success)" : "var(--color-muted)";
+
+			sellarReparto.disabled = falta !== 0;
+			sellarReparto.textContent = "Sellar mi reparto";
+			sellarReparto.style.background = "";
+		}
+
+		sellarReparto.addEventListener("click", () => {
+			sellarReparto.textContent = "Reparto sellado";
+			sellarReparto.style.background = "var(--color-success)";
+			animate(sellarReparto, { scale: [1, 0.96, 1] }, { duration: 0.3 });
+		});
+
+		/** La elección de árbitro (`eleccion-arbitro.tsx`). */
+		function pintarEleccion() {
+			const votos = Object.values(estado.votosArbitro);
+			const cuenta = (c: string) => votos.filter((v) => v === c).length;
+			/* La barra se mide contra el más votado, como en la app. */
+			const lider = Math.max(1, ...LIGA.map(cuenta));
+			const miVoto = estado.votosArbitro["Tú"];
+
+			eleccion.innerHTML = LIGA.map((c) => {
+				const n = cuenta(c);
+				const yo = c === "Tú";
+				const elegido = miVoto === c;
+				return `
+					<li>
+						<button type="button" data-candidato="${c}" ${yo ? "disabled" : ""}
+							class="w-full rounded-2xl border px-4 py-3 text-left transition-colors"
+							style="border-color:var(--color-${elegido ? "warning" : "hairline"});background:var(--color-${elegido ? "warning-soft" : "surface"});${yo ? "opacity:.6;cursor:default" : ""}"
+							aria-label="${yo ? `Tú, con ${n} votos. No puedes votarte a ti mismo` : `Votar a ${c} como árbitro`}">
+							<span class="flex items-center gap-2.5">
+								<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background:var(--color-primary-soft);color:var(--color-primary)">${cara(c)}</span>
+								<span class="flex-1 text-[15px]" style="color:var(--color-${elegido ? "foreground" : "secondary"});font-weight:${elegido ? 600 : 400}">${c}${yo ? '<span style="color:var(--color-muted)"> · no puedes votarte</span>' : ""}</span>
+								${elegido ? '<span style="color:var(--color-warning)">✓</span>' : ""}
+								<span class="font-bold text-sm tabular-nums" style="color:var(--color-foreground)">${n}</span>
+							</span>
+							${n > 0 ? `<span class="mt-2 block h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)"><span class="block h-full rounded-full" style="width:${(n / lider) * 100}%;background:var(--color-warning)"></span></span>` : ""}
+						</button>
+					</li>`;
+			}).join("");
+
+			for (const b of eleccion.querySelectorAll<HTMLButtonElement>("[data-candidato]:not([disabled])")) {
+				b.addEventListener("click", () => {
+					estado.votosArbitro["Tú"] = b.dataset.candidato!;
+					pintarEleccion();
+					animate(
+						eleccion.querySelector(`[data-candidato="${b.dataset.candidato}"]`)!,
+						{ scale: [1, 0.97, 1] },
+						{ duration: 0.25 },
+					);
+				});
+			}
+		}
+
 		/* ── Paso 3 ────────────────────────────────────────────── */
 
+		/** Quién entra en el destape de una Múltiple: tú, solo si llegaste a 100. */
+		function repartosDelGrupo() {
+			const ops = opciones();
+			const filas = NOMBRES_RIVALES.map((n) => ({
+				nombre: n,
+				reparto: repartoDe(n, ops),
+			}));
+			return repartoCompleto()
+				? [{ nombre: "Tú", reparto: estado.reparto }, ...filas]
+				: filas;
+		}
+
 		function destapar() {
+			if (multiple()) return destaparMultiple();
+
 			const todos = [{ nombre: "Tú", prob: estado.prob }, ...RIVALES];
 
 			destape.innerHTML = todos
@@ -800,14 +1435,10 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 				{ opacity: [0, 1], y: [16, 0], scale: [0.96, 1] },
 				{ ...MUELLE, delay: stagger(0.08) },
 			);
-			filas.forEach((fila, i) => {
-				const barra = fila.querySelector(".barra") as HTMLElement;
-				animate(
-					barra,
-					{ width: ["0%", todos[i].prob + "%"] },
-					{ ...MUELLE_SUAVE, delay: 0.08 * i + 0.1 },
-				);
-			});
+			llenar(
+				filas.map((f) => f.querySelector(".barra") as HTMLElement),
+				todos.map((j) => j.prob),
+			);
 
 			const prom = Math.round(
 				todos.reduce((a, j) => a + j.prob, 0) / todos.length,
@@ -816,136 +1447,354 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 			media.style.color = colorProb(prom);
 		}
 
-		q<HTMLButtonElement>("#sim-repetir").addEventListener("click", destapar);
+		function destaparMultiple() {
+			const ops = opciones();
+			const grupo = repartosDelGrupo();
+			const medias: Reparto = Object.fromEntries(
+				ops.map((o) => [
+					o,
+					Math.round(
+						grupo.reduce((a, r) => a + (r.reparto[o] ?? 0), 0) / grupo.length,
+					),
+				]),
+			);
+			const colores = coloresDeReparto(medias);
 
-		/* ── Paso 4 ────────────────────────────────────────────── */
-
-		const justo = q<HTMLElement>("#sim-justo");
-		const disputa = q<HTMLElement>("#sim-disputa");
-		const gracia = q<HTMLElement>("#sim-gracia");
-
-		function pintarModo() {
-			q<HTMLElement>("#sim-modo-texto").textContent = MODOS[estado.modo];
-			const esJusto = estado.modo === "justo" && estado.resultado !== "anulada";
-			justo.hidden = !esJusto;
-			if (esJusto) {
-				animate(justo, { opacity: [0, 1], y: [10, 0] }, MUELLE);
-				animate(gracia, { width: ["0%", "62%"] }, { duration: 1.6, ease: "easeOut" });
-			}
-		}
-
-		for (const b of qa<HTMLButtonElement>(".modo")) {
-			b.addEventListener("click", () => {
-				estado.modo = b.dataset.modo!;
-				for (const otro of qa<HTMLButtonElement>(".modo")) {
-					const activo = otro === b;
-					otro.setAttribute("aria-pressed", String(activo));
-					otro.style.borderColor = activo
-						? "var(--color-primary)"
-						: "var(--color-glass-border)";
-					otro.style.background = activo
-						? "var(--color-primary-soft)"
-						: "var(--color-card)";
-					otro.style.color = activo
-						? "var(--color-primary)"
-						: "var(--color-secondary)";
-				}
-				disputa.hidden = true;
-				pintarModo();
-			});
-		}
-
-		for (const b of qa<HTMLButtonElement>(".resultado")) {
-			b.addEventListener("click", () => {
-				estado.resultado = b.dataset.resultado as typeof estado.resultado;
-				for (const otro of qa<HTMLButtonElement>(".resultado")) {
-					const activo = otro === b;
-					const color =
-						otro.dataset.resultado === "anulada"
-							? "var(--color-muted)"
-							: "var(--color-primary)";
-					otro.setAttribute("aria-pressed", String(activo));
-					otro.style.borderColor = activo ? color : "var(--color-glass-border)";
-					otro.style.background = activo
-						? otro.dataset.resultado === "anulada"
-							? "var(--color-hairline)"
-							: "var(--color-primary-soft)"
-						: "var(--color-card)";
-					otro.style.color = activo ? color : "var(--color-secondary)";
-				}
-				animate(b, { scale: [1, 0.95, 1] }, { duration: 0.28 });
-				pintarModo();
-			});
-		}
-
-		q<HTMLButtonElement>("#sim-disputar").addEventListener("click", () => {
-			disputa.hidden = false;
-			animate(disputa, { opacity: [0, 1], y: [10, 0] }, MUELLE);
-
-			const reparto = [
-				{ etiqueta: "Sí ocurrió", n: 2, color: "var(--color-success)" },
-				{ etiqueta: "No ocurrió", n: 2, color: "var(--color-danger)" },
-				{ etiqueta: "Fue ambigua", n: 1, color: "var(--color-muted)" },
-			];
-			const total = reparto.reduce((a, r) => a + r.n, 0);
-
-			votos.innerHTML = reparto
+			const listaMedias = q<HTMLElement>("#sim-medias");
+			listaMedias.innerHTML = ops
 				.map(
-					(r) => `
-					<li>
-						<div class="flex items-baseline justify-between">
-							<span class="text-sm" style="color:var(--color-secondary)">${r.etiqueta}</span>
-							<span class="font-semibold text-sm tabular-nums" style="color:var(--color-foreground)">${r.n}/${total}</span>
+					(o) => `
+					<li class="grid gap-1.5">
+						<div class="flex items-center gap-3">
+							<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background:var(--color-primary-soft);color:var(--color-${o === NADIE ? "muted" : "primary"})">${cara(o)}</span>
+							<span class="flex-1 text-[15px] font-medium" style="color:var(--color-foreground)">${o}</span>
+							<span class="font-bold text-lg tabular-nums" style="color:var(--color-foreground)">${medias[o]}%</span>
 						</div>
-						<div class="mt-1.5 h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
-							<span class="barra block h-full rounded-full" style="width:0%;background:${r.color}"></span>
+						<div class="h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
+							<span class="barra block h-full rounded-full" style="width:0%;background:${colores[o] ?? "transparent"}"></span>
 						</div>
 					</li>`,
 				)
 				.join("");
+			llenar(
+				[...listaMedias.querySelectorAll<HTMLElement>(".barra")],
+				ops.map((o) => medias[o]),
+			);
 
-			[...votos.querySelectorAll<HTMLElement>(".barra")].forEach((barra, i) => {
-				animate(
-					barra,
-					{ width: ["0%", (reparto[i].n / total) * 100 + "%"] },
-					{ ...MUELLE_SUAVE, delay: 0.1 * i },
-				);
+			/* De más a menos y sin los 0, como en «Cómo repartió cada uno». */
+			const listaRepartos = q<HTMLElement>("#sim-repartos");
+			listaRepartos.innerHTML = grupo
+				.map((r, i) => {
+					const tu = r.nombre === "Tú";
+					const linea = Object.entries(r.reparto)
+						.filter(([, p]) => p > 0)
+						.sort(([, a], [, b]) => b - a)
+						.map(([o, p]) => `${o === "Tú" ? "tú" : o} ${p}%`)
+						.join(" · ");
+					return `
+					<li class="px-4 py-3 ${i > 0 ? "border-t" : ""}" style="border-color:var(--color-hairline);${tu ? "background:var(--color-primary-soft)" : ""}">
+						<p class="text-[15px] font-medium" style="color:var(--color-foreground)">${r.nombre}</p>
+						<p class="text-xs tabular-nums" style="color:var(--color-muted)">${linea}</p>
+					</li>`;
+				})
+				.join("");
+			animate(
+				[...listaRepartos.children] as HTMLElement[],
+				{ opacity: [0, 1], y: [12, 0] },
+				{ ...MUELLE, delay: stagger(0.07, { startDelay: 0.1 }) },
+			);
+
+			for (const aviso of qa<HTMLElement>("[data-sin-reparto]")) {
+				aviso.hidden = repartoCompleto();
+			}
+		}
+
+		q<HTMLButtonElement>("#sim-repetir").addEventListener("click", destapar);
+
+		/* ── Paso 4 ────────────────────────────────────────────── */
+
+		const disputable = q<HTMLElement>("#sim-disputable");
+		const disputa = q<HTMLElement>("#sim-disputa");
+		const votacion = q<HTMLElement>("#sim-votacion");
+		const motivo = q<HTMLTextAreaElement>("#sim-motivo");
+		const enviarDisputa = q<HTMLButtonElement>("#sim-enviar-disputa");
+		const disputar = q<HTMLButtonElement>("#sim-disputar");
+		const anular = q<HTMLButtonElement>("#sim-anular");
+
+		/** Vuelve las 48 h a su estado inicial: aún sin disputar. */
+		function reiniciarDisputa() {
+			disputa.hidden = true;
+			votacion.hidden = true;
+			disputar.hidden = false;
+			motivo.value = "";
+			enviarDisputa.disabled = true;
+			estado.miVoto = null;
+		}
+
+		function pintarResolver() {
+			pintarResultado();
+			pintarGanadoras();
+			anular.setAttribute("aria-pressed", String(estado.anulada));
+			anular.style.background = estado.anulada ? "var(--color-hairline)" : "";
+			anular.style.color = estado.anulada
+				? "var(--color-foreground)"
+				: "var(--color-secondary)";
+
+			/* Anulada no se puede disputar: no cuenta para nadie. */
+			disputable.hidden = estado.anulada;
+			const quien = quienResuelve();
+			q<HTMLElement>("#sim-resolvio").textContent =
+				quien === "Tú" ? "La resolviste tú" : `${quien} la resolvió`;
+			if (!votacion.hidden) pintarVotacion();
+		}
+
+		function pintarResultado() {
+			for (const b of qa<HTMLButtonElement>(".resultado")) {
+				const si = b.dataset.resultado === "si";
+				const activo = !estado.anulada && estado.resultado === si;
+				const color = si ? "var(--color-success)" : "var(--color-danger)";
+				b.setAttribute("aria-pressed", String(activo));
+				b.style.borderColor = color;
+				b.style.background = activo ? color : "transparent";
+				b.style.color = activo ? "var(--color-on-primary)" : color;
+			}
+		}
+
+		for (const b of qa<HTMLButtonElement>(".resultado")) {
+			b.addEventListener("click", () => {
+				estado.resultado = b.dataset.resultado === "si";
+				estado.anulada = false;
+				reiniciarDisputa();
+				animate(b, { scale: [1, 0.95, 1] }, { duration: 0.28 });
+				pintarResolver();
 			});
+		}
+
+		/** «¿Quién fue al final?»: elegir la opción ganadora. */
+		function pintarGanadoras() {
+			const lista = q<HTMLElement>("#sim-ganadoras");
+			lista.innerHTML = opciones()
+				.map((o) => {
+					const marcada = !estado.anulada && estado.ganadora === o;
+					return `
+					<li>
+						<button type="button" data-ganadora="${o}" role="radio" aria-checked="${marcada}"
+							class="flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors"
+							style="border-color:var(--color-${marcada ? "success" : "hairline"});background:var(--color-${marcada ? "success-soft" : "surface"})">
+							<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background:var(--color-primary-soft);color:var(--color-${o === NADIE ? "muted" : "primary"})">${cara(o)}</span>
+							<span class="flex-1 text-[15px]" style="color:var(--color-${marcada ? "foreground" : "secondary"});font-weight:${marcada ? 600 : 400}">${o}</span>
+							${marcada ? '<span style="color:var(--color-success)">✓</span>' : ""}
+						</button>
+					</li>`;
+				})
+				.join("");
+
+			for (const b of lista.querySelectorAll<HTMLButtonElement>("[data-ganadora]")) {
+				b.addEventListener("click", () => {
+					estado.ganadora = b.dataset.ganadora!;
+					estado.anulada = false;
+					reiniciarDisputa();
+					pintarResolver();
+				});
+			}
+		}
+
+		anular.addEventListener("click", () => {
+			estado.anulada = !estado.anulada;
+			reiniciarDisputa();
+			animate(anular, { scale: [1, 0.96, 1] }, { duration: 0.25 });
+			pintarResolver();
+		});
+
+		disputar.addEventListener("click", () => {
+			disputar.hidden = true;
+			disputa.hidden = false;
+			animate(disputa, { opacity: [0, 1], y: [10, 0] }, MUELLE);
+			motivo.focus();
+		});
+
+		/* Como la app: el motivo es obligatorio y de al menos 10 caracteres. */
+		motivo.addEventListener("input", () => {
+			enviarDisputa.disabled = motivo.value.trim().length < 10;
+		});
+
+		enviarDisputa.addEventListener("click", () => {
+			q<HTMLElement>("#sim-motivo-eco").textContent = motivo.value.trim();
+			disputa.hidden = true;
+			votacion.hidden = false;
+			animate(votacion, { opacity: [0, 1], y: [10, 0] }, MUELLE);
+			pintarVotacion(true);
+		});
+
+		/**
+		 * La votación de la disputa (`resolucion.tsx`). Los demás ya han votado:
+		 * dos apoyan lo resuelto, uno lo ve al revés y uno lo ve ambiguo. Falta
+		 * tu voto.
+		 */
+		function pintarVotacion(animar = false) {
+			const miembros = LIGA.length;
+			const umbral = Math.ceil(miembros * (2 / 3));
+			const ganadora = estado.ganadora;
+			/* En una Múltiple se vota sobre la opción elegida: «¿fue Marta?». */
+			const propuesta = multiple() ? true : estado.resultado;
+			const apoya = (v: "si" | "no" | "ambigua") =>
+				v !== "ambigua" && (v === "si") === propuesta;
+			const votosRivales = {
+				si: propuesta ? 2 : 1,
+				no: propuesta ? 1 : 2,
+				ambigua: 1,
+			};
+			const OPCIONES = [
+				{
+					voto: "si" as const,
+					etiqueta: multiple() ? `Sí, fue ${ganadora}` : "Sí ocurrió",
+					color: "var(--color-success)",
+				},
+				{
+					voto: "no" as const,
+					etiqueta: multiple() ? `No fue ${ganadora}` : "No ocurrió",
+					color: "var(--color-danger)",
+				},
+				{ voto: "ambigua" as const, etiqueta: "Es ambigua", color: "var(--color-muted)" },
+			];
+			const cuenta = (v: "si" | "no" | "ambigua") =>
+				votosRivales[v] + (estado.miVoto === v ? 1 : 0);
+
+			q<HTMLElement>("#sim-pregunta-voto").textContent = multiple()
+				? `¿Fue ${ganadora}?`
+				: "¿Ocurrió al final?";
+
+			const votar = q<HTMLElement>("#sim-votar");
+			votar.innerHTML = OPCIONES.map((o) => {
+				const elegido = estado.miVoto === o.voto;
+				return `
+					<button type="button" data-voto="${o.voto}"
+						class="flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
+						style="border-color:var(--color-${elegido ? "primary" : "hairline"});background:var(--color-${elegido ? "primary-soft" : "surface"})">
+						<span class="text-[15px]" style="color:var(--color-${elegido ? "foreground" : "secondary"});font-weight:${elegido ? 600 : 400}">${o.etiqueta}</span>
+						${elegido ? '<span style="color:var(--color-primary)">✓</span>' : ""}
+					</button>`;
+			}).join("");
+			for (const b of votar.querySelectorAll<HTMLButtonElement>("[data-voto]")) {
+				b.addEventListener("click", () => {
+					estado.miVoto = b.dataset.voto as "si" | "no" | "ambigua";
+					pintarVotacion();
+				});
+			}
 
 			q<HTMLElement>("#sim-umbral").textContent =
-				"Para tumbar la propuesta hacen falta dos tercios (4 de 5). Con 2 votos no se alcanza, así que la propuesta queda firme: una minoría interesada no descarrila nada.";
-		});
+				`Hacen falta ${umbral} de ${miembros} para ${multiple() ? "anularla" : "cambiar el resultado"}`;
+
+			/* Las tres posturas, y la que coincide con lo resuelto sin umbral:
+			   si no se alcanza ningún 2/3, lo resuelto queda firme igualmente. */
+			const recuento = q<HTMLElement>("#sim-recuento");
+			recuento.innerHTML = OPCIONES.map((o) => {
+				const n = cuenta(o.voto);
+				const sinUmbral = apoya(o.voto);
+				const referencia = sinUmbral ? miembros : umbral;
+				const faltan = Math.max(umbral - n, 0);
+				return `
+					<li>
+						<div class="flex items-baseline justify-between">
+							<span class="text-sm font-medium" style="color:var(--color-foreground)">${o.etiqueta}${estado.miVoto === o.voto ? '<span style="color:var(--color-muted);font-weight:400"> · tu voto</span>' : ""}</span>
+							<span class="font-bold text-sm tabular-nums" style="color:var(--color-foreground)">${sinUmbral ? n : `${n}/${umbral}`}</span>
+						</div>
+						<div class="mt-1.5 h-1.5 overflow-hidden rounded-full" style="background:var(--color-hairline)">
+							<span class="barra block h-full rounded-full" style="width:${animar ? 0 : Math.min((n / referencia) * 100, 100)}%;background:${o.color}"></span>
+						</div>
+						<p class="mt-1 text-xs" style="color:var(--color-muted)">${sinUmbral ? "Es lo resuelto: no necesita umbral" : faltan === 0 ? "Ya hay suficientes" : `Faltan ${faltan}`}</p>
+					</li>`;
+			}).join("");
+			if (animar) {
+				llenar(
+					[...recuento.querySelectorAll<HTMLElement>(".barra")],
+					OPCIONES.map((o) =>
+						Math.min((cuenta(o.voto) / (apoya(o.voto) ? miembros : umbral)) * 100, 100),
+					),
+					0.1,
+				);
+			}
+
+			const contra = OPCIONES.find((o) => o.voto !== "ambigua" && !apoya(o.voto))!;
+			const tumbada = cuenta(contra.voto) >= umbral;
+			const ambigua = cuenta("ambigua") >= umbral;
+			q<HTMLElement>("#sim-desenlace").textContent =
+				"Quien no vota cuenta como que acepta lo que se resolvió." +
+				(multiple() ? " Si el grupo dice que no fue, la predicción se anula." : "") +
+				" " +
+				(tumbada || ambigua
+					? "Con estos votos, el grupo le daría la vuelta."
+					: "Con estos votos no se llega: lo resuelto queda firme. Una minoría interesada no descarrila nada.");
+		}
 
 		/* ── Paso 5 ────────────────────────────────────────────── */
 
 		function pintarMarcador() {
-			const anulada = estado.resultado === "anulada";
+			const anulada = estado.anulada;
 			q<HTMLElement>("#sim-anulada").hidden = !anulada;
 			q<HTMLElement>("#sim-marcador").hidden = anulada;
 			if (anulada) return;
-
-			const ocurrio = estado.resultado === "si";
-			const p = estado.prob;
-
-			q<HTMLElement>("#sim-resumen-prob").textContent = p + " %";
-			q<HTMLElement>("#sim-resumen-res").textContent = ocurrio
-				? "sí ocurrió"
-				: "no ocurrió";
-
-			const indice = indiceDe(p, ocurrio);
-			const elIndice = q<HTMLElement>("#sim-indice");
-			numero(elIndice, 0, indice);
-			elIndice.style.color = colorProb(indice);
-			q<HTMLElement>("#sim-brier").textContent = brierDe(p, ocurrio).toFixed(3);
 
 			const medallas = [
 				"var(--color-oro)",
 				"var(--color-plata)",
 				"var(--color-bronce)",
 			];
-			const clasificacion = [{ nombre: "Tú", prob: p }, ...RIVALES]
-				.map((j) => ({ ...j, indice: indiceDe(j.prob, ocurrio) }))
-				.sort((a, b) => b.indice - a.indice);
+			const resumen = q<HTMLElement>("#sim-resumen");
+			const miIndice = q<HTMLElement>("#sim-mi-indice");
+			q<HTMLElement>("#sim-formula-multiple").hidden = !multiple();
+
+			let clasificacion: {
+				nombre: string;
+				dato: string;
+				indice: number;
+				escondido: boolean;
+			}[];
+
+			if (multiple()) {
+				const ganadora = estado.ganadora;
+				const tuyo = repartoCompleto();
+				miIndice.hidden = !tuyo;
+				resumen.innerHTML = tuyo
+					? `${ganadora === "Tú" ? "Te" : "Le"} diste <span class="font-semibold" style="color:var(--color-foreground)">${estado.reparto[ganadora] ?? 0} %</span> a ${ganadora === "Tú" ? "ti" : ganadora}, y ${ganadora === "Tú" ? "ganaste tú" : `ganó ${ganadora}`}. Cuanto más le diste a quien ganó, mejor.`
+					: "Tu reparto no llegaba al 100 %, así que esta no te puntúa. Vuelve al paso 2 y termina de repartir.";
+				if (tuyo) {
+					const indice = indiceMultiple(estado.reparto, ganadora);
+					const el = q<HTMLElement>("#sim-indice");
+					numero(el, 0, indice);
+					el.style.color = colorProb(indice);
+					q<HTMLElement>("#sim-brier").textContent = brierMultiple(
+						estado.reparto,
+						ganadora,
+					).toFixed(3);
+				}
+				clasificacion = repartosDelGrupo().map((r) => ({
+					nombre: r.nombre,
+					dato: `${r.reparto[ganadora] ?? 0} % a ${ganadora === "Tú" ? "ti" : ganadora}`,
+					indice: indiceMultiple(r.reparto, ganadora),
+					escondido: false,
+				}));
+			} else {
+				const ocurrio = estado.resultado;
+				const p = estado.prob;
+				miIndice.hidden = false;
+				resumen.innerHTML = `Dijiste <span class="font-semibold" style="color:var(--color-foreground)">${p} %</span> y <span class="font-semibold" style="color:var(--color-foreground)">${ocurrio ? "sí ocurrió" : "no ocurrió"}</span>`;
+
+				const indice = indiceDe(p, ocurrio);
+				const el = q<HTMLElement>("#sim-indice");
+				numero(el, 0, indice);
+				el.style.color = colorProb(indice);
+				q<HTMLElement>("#sim-brier").textContent = brierDe(p, ocurrio).toFixed(3);
+
+				clasificacion = [{ nombre: "Tú", prob: p }, ...RIVALES].map((j) => ({
+					nombre: j.nombre,
+					dato: `${j.prob} %`,
+					indice: indiceDe(j.prob, ocurrio),
+					escondido: j.prob === 50,
+				}));
+			}
+
+			clasificacion.sort((a, b) => b.indice - a.indice);
 
 			tabla.innerHTML = clasificacion
 				.map((j, i) => {
@@ -953,8 +1802,8 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 					return `
 					<li class="flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t" : ""}" style="border-color:var(--color-hairline);${tu ? "background:var(--color-primary-soft)" : ""}">
 						<span class="w-6 shrink-0 text-center font-bold text-sm tabular-nums" style="color:${medallas[i] ?? "var(--color-muted)"}">${i + 1}</span>
-						<span class="flex-1 text-sm" style="color:var(--color-${tu ? "foreground" : "secondary"});font-weight:${tu ? 600 : 400}">${j.nombre}</span>
-						<span class="text-sm tabular-nums" style="color:var(--color-muted)">${j.prob} %</span>
+						<span class="flex-1 text-sm" style="color:var(--color-${tu ? "foreground" : "secondary"});font-weight:${tu ? 600 : 400}">${j.nombre}${j.escondido ? '<span class="block text-xs" style="color:var(--color-muted);font-weight:400">sin mojarse</span>' : ""}</span>
+						<span class="text-right text-sm tabular-nums" style="color:var(--color-muted)">${j.dato}</span>
 						<span class="w-10 shrink-0 text-right font-semibold text-sm tabular-nums" style="color:var(--color-foreground)">${j.indice}</span>
 					</li>`;
 				})
@@ -972,15 +1821,20 @@ const PREGUNTA_POR_DEFECTO = "¿Aguantará Laura la dieta hasta fin de mes?";
 		for (const paso of pasos) {
 			paso.addEventListener("click", () => irA(Number(paso.dataset.paso)));
 		}
-		siguiente.addEventListener("click", () =>
-			irA(estado.paso === paneles.length ? 1 : estado.paso + 1),
-		);
+		siguiente.addEventListener("click", () => {
+			if (estado.paso === paneles.length) reiniciarDisputa();
+			irA(estado.paso === paneles.length ? 1 : estado.paso + 1);
+		});
 		atras.addEventListener("click", () => irA(estado.paso - 1));
 
+		elegirTipo("binaria");
 		elegirSujeto("Nadie en concreto");
-		qa<HTMLButtonElement>(".modo")[1].click();
-		qa<HTMLButtonElement>(".resultado")[0].click();
+		elegirPersonas(estado.personas);
+		pintarInterruptor();
 		pintarProb();
 		pintarStepper();
+		for (const eco of qa<HTMLElement>("[data-eco-pregunta]")) {
+			eco.textContent = textoPregunta();
+		}
 	}
 </script>
